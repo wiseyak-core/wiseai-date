@@ -1,5 +1,5 @@
 import datetime
-from lib.nepali_date import (
+from library.nepali_date import (
     bs_to_ad,
     ad_to_bs,
     NepaliDateTime,
