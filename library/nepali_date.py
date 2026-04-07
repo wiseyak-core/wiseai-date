@@ -1246,6 +1246,74 @@ FIELD_YEARS       : str = "years"    # plural form used in plus/minus kwargs
 FIELD_MONTHS      : str = "months"   # plural form used in plus/minus kwargs
 
 # ---------------------------------------------------------------------------
+# GROUPING / ANALYTICS STRING CONSTANTS
+# ---------------------------------------------------------------------------
+DAY_LITERAL        : str = "day"
+WEEK_LITERAL       : str = "week"
+MONTH_LITERAL      : str = "month"
+QUARTER_LITERAL    : str = "quarter"
+HALF_LITERAL       : str = "half"
+YEAR_LITERAL       : str = "year"
+
+TODAY_LITERAL      : str = "today"
+YESTERDAY_LITERAL  : str = "yesterday"
+TOMORROW_LITERAL   : str = "tomorrow"
+DAY_AFTER_TOMORROW_LITERAL : str = "day_after_tomorrow"
+
+THIS_WEEK_LITERAL  : str = "this_week"
+LAST_WEEK_LITERAL  : str = "last_week"
+NEXT_WEEK_LITERAL  : str = "next_week"
+
+THIS_MONTH_LITERAL : str = "this_month"
+LAST_MONTH_LITERAL : str = "last_month"
+NEXT_MONTH_LITERAL : str = "next_month"
+
+THIS_YEAR_LITERAL  : str = "this_year"
+LAST_YEAR_LITERAL  : str = "last_year"
+NEXT_YEAR_LITERAL  : str = "next_year"
+
+ROLLING_7_LITERAL  : str = "rolling_7"
+ROLLING_30_LITERAL : str = "rolling_30"
+
+AAJA_LITERAL       : str = "aaja"
+HIJO_LITERAL       : str = "hijo"
+BHOLI_LITERAL      : str = "bholi"
+
+AAJA_DEVA_LITERAL       : str = "आज"
+HIJO_DEVA_LITERAL       : str = "हिजो"
+BHOLI_DEVA_LITERAL      : str = "भोलि"
+PARSI_DEVA_LITERAL      : str = "पर्सि"
+
+YOHAPTA_DEVA_LITERAL    : str = "यो_हप्ता"
+GATAHAPTA_DEVA_LITERAL  : str = "गत_हप्ता"
+AAGAMIHAPTA_DEVA_LITERAL: str = "आगामी_हप्ता"
+
+YOMAHINA_DEVA_LITERAL   : str = "यो_महिना"
+GATAMAHINA_DEVA_LITERAL : str = "गत_महिना"
+AAGAMIMAHINA_DEVA_LITERAL: str = "आगामी_महिना"
+
+YOBARSA_DEVA_LITERAL    : str = "यो_वर्ष"
+GATABARSA_DEVA_LITERAL  : str = "गत_वर्ष"
+AAGAMIBARSA_DEVA_LITERAL: str = "आगामी_वर्ष"
+
+CURRENT_WEEK_LITERAL    : str = "current_week"
+GATAHAPTA_LITERAL       : str = "gata_hapta"
+AAGAMIHAPTA_LITERAL     : str = "aagami_hapta"
+CURRENT_MONTH_LITERAL   : str = "current_month"
+GATAMAHINA_LITERAL      : str = "gata_mahina"
+AAGAMIMAHINA_LITERAL    : str = "aagami_mahina"
+YOBARSA_LITERAL         : str = "yo_barsa"
+GATABARSA_LITERAL       : str = "gata_barsa"
+AAGAMIBARSA_LITERAL     : str = "aagami_barsa"
+
+PASHILLO_7_DEVA_LITERAL : str = "पछिल्लो_७_दिन"
+PASHILLO_30_DEVA_LITERAL: str = "पछिल्लो_३०_दिन"
+PAST_7_DAYS_LITERAL     : str = "past_7_days"
+ROLLING_7_DAYS_LITERAL  : str = "rolling_7_days"
+PAST_30_DAYS_LITERAL    : str = "past_30_days"
+ROLLING_30_DAYS_LITERAL : str = "rolling_30_days"
+
+# ---------------------------------------------------------------------------
 # NepaliDateTime — a thin wrapper that stores a UTC datetime internally
 # ---------------------------------------------------------------------------
 
@@ -2080,24 +2148,24 @@ def bs_month_calendar(year: int, month: int) -> List[List[Optional[int]]]:
 # ---------------------------------------------------------------------------
 _PHRASE_ALIASES: Dict[str, str] = {
     # Points
-    "today": "today", "आज": "today", "aaja": "today",
-    "yesterday": "yesterday", "हिजो": "yesterday", "hijo": "yesterday",
-    "tomorrow": "tomorrow", "भोलि": "tomorrow", "bholi": "tomorrow",
+    TODAY_LITERAL: TODAY_LITERAL, AAJA_DEVA_LITERAL: TODAY_LITERAL, AAJA_LITERAL: TODAY_LITERAL,
+    YESTERDAY_LITERAL: YESTERDAY_LITERAL, HIJO_DEVA_LITERAL: YESTERDAY_LITERAL, HIJO_LITERAL: YESTERDAY_LITERAL,
+    TOMORROW_LITERAL: TOMORROW_LITERAL, BHOLI_DEVA_LITERAL: TOMORROW_LITERAL, BHOLI_LITERAL: TOMORROW_LITERAL,
     # Weekly
-    "this_week": "this_week", "यो_हप्ता": "this_week", "current_week": "this_week",
-    "last_week": "last_week", "गत_हप्ता": "last_week", "gata_hapta": "last_week",
-    "next_week": "next_week", "आगामी_हप्ता": "next_week", "aagami_hapta": "next_week",
+    THIS_WEEK_LITERAL: THIS_WEEK_LITERAL, YOHAPTA_DEVA_LITERAL: THIS_WEEK_LITERAL, CURRENT_WEEK_LITERAL: THIS_WEEK_LITERAL,
+    LAST_WEEK_LITERAL: LAST_WEEK_LITERAL, GATAHAPTA_DEVA_LITERAL: LAST_WEEK_LITERAL, GATAHAPTA_LITERAL: LAST_WEEK_LITERAL,
+    NEXT_WEEK_LITERAL: NEXT_WEEK_LITERAL, AAGAMIHAPTA_DEVA_LITERAL: NEXT_WEEK_LITERAL, AAGAMIHAPTA_LITERAL: NEXT_WEEK_LITERAL,
     # Monthly
-    "this_month": "this_month", "यो_महिना": "this_month", "current_month": "this_month",
-    "last_month": "last_month", "गत_महिना": "last_month", "gata_mahina": "last_month",
-    "next_month": "next_month", "आगामी_महिना": "next_month", "aagami_mahina": "next_month",
+    THIS_MONTH_LITERAL: THIS_MONTH_LITERAL, YOMAHINA_DEVA_LITERAL: THIS_MONTH_LITERAL, CURRENT_MONTH_LITERAL: THIS_MONTH_LITERAL,
+    LAST_MONTH_LITERAL: LAST_MONTH_LITERAL, GATAMAHINA_DEVA_LITERAL: LAST_MONTH_LITERAL, GATAMAHINA_LITERAL: LAST_MONTH_LITERAL,
+    NEXT_MONTH_LITERAL: NEXT_MONTH_LITERAL, AAGAMIMAHINA_DEVA_LITERAL: NEXT_MONTH_LITERAL, AAGAMIMAHINA_LITERAL: NEXT_MONTH_LITERAL,
     # Yearly
-    "this_year": "this_year", "यो_वर्ष": "this_year", "yo_barsa": "this_year",
-    "last_year": "last_year", "गत_वर्ष": "last_year", "gata_barsa": "last_year",
-    "next_year": "next_year", "आगामी_वर्ष": "next_year", "aagami_barsa": "next_year",
+    THIS_YEAR_LITERAL: THIS_YEAR_LITERAL, YOBARSA_DEVA_LITERAL: THIS_YEAR_LITERAL, YOBARSA_LITERAL: THIS_YEAR_LITERAL,
+    LAST_YEAR_LITERAL: LAST_YEAR_LITERAL, GATABARSA_DEVA_LITERAL: LAST_YEAR_LITERAL, GATABARSA_LITERAL: LAST_YEAR_LITERAL,
+    NEXT_YEAR_LITERAL: NEXT_YEAR_LITERAL, AAGAMIBARSA_DEVA_LITERAL: NEXT_YEAR_LITERAL, AAGAMIBARSA_LITERAL: NEXT_YEAR_LITERAL,
     # Rolling Windows
-    "rolling_7_days": "rolling_7", "past_7_days": "rolling_7", "पछिल्लो_७_दिन": "rolling_7",
-    "rolling_30_days": "rolling_30", "past_30_days": "rolling_30", "पछिल्लो_३०_दिन": "rolling_30",
+    ROLLING_7_DAYS_LITERAL: ROLLING_7_LITERAL, PAST_7_DAYS_LITERAL: ROLLING_7_LITERAL, PASHILLO_7_DEVA_LITERAL: ROLLING_7_LITERAL,
+    ROLLING_30_DAYS_LITERAL: ROLLING_30_LITERAL, PAST_30_DAYS_LITERAL: ROLLING_30_LITERAL, PASHILLO_30_DEVA_LITERAL: ROLLING_30_LITERAL,
 }
 
 # ---------------------------------------------------------------------------
@@ -2123,25 +2191,25 @@ def _resolve_year_relative(r: datetime.date, bs: bool, offset: int = 0) -> DateR
     return ad_year_to_bs_range(r.year + offset)
 
 _PHRASE_RESOLVERS: Dict[str, Callable[[datetime.date, bool], DateRange]] = {
-    "today": lambda r, bs: DateRange(r, r, label="Today"),
-    "yesterday": lambda r, bs: DateRange(r - _DAY_DELTA(1), r - _DAY_DELTA(1), label="Yesterday"),
-    "tomorrow": lambda r, bs: DateRange(r + _DAY_DELTA(1), r + _DAY_DELTA(1), label="Tomorrow"),
+    TODAY_LITERAL: lambda r, bs: DateRange(r, r, label="Today"),
+    YESTERDAY_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(1), r - _DAY_DELTA(1), label="Yesterday"),
+    TOMORROW_LITERAL: lambda r, bs: DateRange(r + _DAY_DELTA(1), r + _DAY_DELTA(1), label="Tomorrow"),
     
-    "this_week": lambda r, bs: DateRange(r - _DAY_DELTA(r.weekday()), r + _DAY_DELTA(6 - r.weekday()), label="This Week"),
-    "last_week": lambda r, bs: DateRange(r - _DAY_DELTA(r.weekday() + 7), r - _DAY_DELTA(r.weekday() + 1), label="Last Week"),
-    "next_week": lambda r, bs: DateRange(r + _DAY_DELTA(7 - r.weekday()), r + _DAY_DELTA(13 - r.weekday()), label="Next Week"),
+    THIS_WEEK_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(r.weekday()), r + _DAY_DELTA(6 - r.weekday()), label="This Week"),
+    LAST_WEEK_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(r.weekday() + 7), r - _DAY_DELTA(r.weekday() + 1), label="Last Week"),
+    NEXT_WEEK_LITERAL: lambda r, bs: DateRange(r + _DAY_DELTA(7 - r.weekday()), r + _DAY_DELTA(13 - r.weekday()), label="Next Week"),
     
-    "rolling_7": lambda r, bs: DateRange(r - _DAY_DELTA(6), r, label="Last 7 Days"),
-    "rolling_30": lambda r, bs: DateRange(r - _DAY_DELTA(29), r, label="Last 30 Days"),
+    ROLLING_7_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(6), r, label="Last 7 Days"),
+    ROLLING_30_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(29), r, label="Last 30 Days"),
 
     # Calendar Aware Resolvers (Evaluates AD->BS or AD->AD dynamically)
-    "this_month": lambda r, bs: _resolve_month_relative(r, bs, 0),
-    "last_month": lambda r, bs: _resolve_month_relative(r, bs, -1),
-    "next_month": lambda r, bs: _resolve_month_relative(r, bs, 1),
+    THIS_MONTH_LITERAL: lambda r, bs: _resolve_month_relative(r, bs, 0),
+    LAST_MONTH_LITERAL: lambda r, bs: _resolve_month_relative(r, bs, -1),
+    NEXT_MONTH_LITERAL: lambda r, bs: _resolve_month_relative(r, bs, 1),
     
-    "this_year": lambda r, bs: _resolve_year_relative(r, bs, 0),
-    "last_year": lambda r, bs: _resolve_year_relative(r, bs, -1),
-    "next_year": lambda r, bs: _resolve_year_relative(r, bs, 1),
+    THIS_YEAR_LITERAL: lambda r, bs: _resolve_year_relative(r, bs, 0),
+    LAST_YEAR_LITERAL: lambda r, bs: _resolve_year_relative(r, bs, -1),
+    NEXT_YEAR_LITERAL: lambda r, bs: _resolve_year_relative(r, bs, 1),
 }
 
 # ---------------------------------------------------------------------------
@@ -2195,15 +2263,15 @@ def _generate_weeks(min_d: datetime.date, max_d: datetime.date, bs: bool) -> Lis
     ]
 
 _PERIOD_GENERATORS: Dict[str, Callable[[datetime.date, datetime.date, bool], Iterable[DateRange]]] = {
-    "day": lambda min_d, max_d, bs: [
+    DAY_LITERAL: lambda min_d, max_d, bs: [
         DateRange(min_d + _DAY_DELTA(i), min_d + _DAY_DELTA(i), label=str(min_d + _DAY_DELTA(i))) 
         for i in range((max_d - min_d).days + 1)
     ],
-    "week": _generate_weeks,
-    "month": _generate_months,
-    "quarter": _generate_quarters,
-    "half": _generate_halves,
-    "year": lambda min_d, max_d, bs: [
+    WEEK_LITERAL: _generate_weeks,
+    MONTH_LITERAL: _generate_months,
+    QUARTER_LITERAL: _generate_quarters,
+    HALF_LITERAL: _generate_halves,
+    YEAR_LITERAL: lambda min_d, max_d, bs: [
         bs_year_to_ad_range(y) if bs else ad_year_to_bs_range(y)
         for y in range(
             (ad_to_bs(min_d)[0] if bs else min_d.year),
@@ -2220,11 +2288,11 @@ def _to_ascii_phrase(phrase: str) -> str:
         return phrase
     # Convert devanagari to english mapping
     for key, val in {
-        "आज": "today", "हिजो": "yesterday", "भोलि": "tomorrow", "पर्सि": "day_after_tomorrow",
-        "यो_हप्ता": "this_week", "गत_हप्ता": "last_week", "आगामी_हप्ता": "next_week",
-        "यो_महिना": "this_month", "गत_महिना": "last_month", "आगामी_महिना": "next_month",
-        "यो_वर्ष": "this_year", "गत_वर्ष": "last_year", "आगामी_वर्ष": "next_year",
-        "पछिल्लो_७_दिन": "rolling_7", "पछिल्लो_३०_दिन": "rolling_30"
+        AAJA_DEVA_LITERAL: TODAY_LITERAL, HIJO_DEVA_LITERAL: YESTERDAY_LITERAL, BHOLI_DEVA_LITERAL: TOMORROW_LITERAL, PARSI_DEVA_LITERAL: DAY_AFTER_TOMORROW_LITERAL,
+        YOHAPTA_DEVA_LITERAL: THIS_WEEK_LITERAL, GATAHAPTA_DEVA_LITERAL: LAST_WEEK_LITERAL, AAGAMIHAPTA_DEVA_LITERAL: NEXT_WEEK_LITERAL,
+        YOMAHINA_DEVA_LITERAL: THIS_MONTH_LITERAL, GATAMAHINA_DEVA_LITERAL: LAST_MONTH_LITERAL, AAGAMIMAHINA_DEVA_LITERAL: NEXT_MONTH_LITERAL,
+        YOBARSA_DEVA_LITERAL: THIS_YEAR_LITERAL, GATABARSA_DEVA_LITERAL: LAST_YEAR_LITERAL, AAGAMIBARSA_DEVA_LITERAL: NEXT_YEAR_LITERAL,
+        PASHILLO_7_DEVA_LITERAL: ROLLING_7_LITERAL, PASHILLO_30_DEVA_LITERAL: ROLLING_30_LITERAL
     }.items():
         if phrase == key:
             return val
@@ -2260,9 +2328,9 @@ def _resolve_relative(phrase: str, ref_dt: datetime.date, is_bs: bool) -> DateRa
         raise ValueError(f"Unrecognised relative phrase: {phrase}")
     
     val, unit = int(match.group(1)), match.group(2)
-    start_d = ref_dt - _DAY_DELTA(val * (7 if unit == "week" else 1))
+    start_d = ref_dt - _DAY_DELTA(val * (7 if unit == WEEK_LITERAL else 1))
     
-    if unit == "week":
+    if unit == WEEK_LITERAL:
         return DateRange(start_d - _DAY_DELTA(start_d.weekday()), start_d + _DAY_DELTA(6 - start_d.weekday()), label=phrase)
     return DateRange(start_d, start_d, label=phrase)
 

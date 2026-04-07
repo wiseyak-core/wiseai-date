@@ -214,3 +214,5 @@ uv.lock
 # IDEs
 .idea/
 .vscode/
+
+*.txt
