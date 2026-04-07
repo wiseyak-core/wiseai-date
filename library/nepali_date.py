@@ -16,7 +16,8 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass, field
 from itertools import islice
-from typing import Generator, Iterator, List, Optional, Tuple
+import re
+from typing import Any, Generator, Iterator, List, Optional, Tuple, Callable, Dict, Iterable, Literal
 
 # ---------------------------------------------------------------------------
 # CONSTANTS — BS calendar data (1970 BS – 2100 BS)
@@ -196,6 +197,8 @@ _BS_WEEKDAY_NAMES: Tuple[str, ...] = (
     "Sanibar",      # 5 Saturday
     "Aaitabar",     # 6 Sunday
 )
+# Regular expression for parsing relative date strings like "3 days ago"
+_RELATIVE_PATTERN = re.compile(r'^(\d+)\s+(day|week)s?\s+(ago|back)$')
 
 # ---------------------------------------------------------------------------
 # DEVANAGARI CONSTANTS
@@ -283,15 +286,15 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     "vaisakh": 1, "vaishakh": 1, "beshakh": 1,
     # spelling-mistake variants (roman)
     "baisak": 1, "baisackh": 1, "baisahk": 1, "baishak": 1,
-    "baisakhh": 1, "baishakh": 1, "vaisahk": 1, "vaisakha": 1,
-    "beshak": 1, "besakh": 1, "beshakha": 1,
+    "baisakhh": 1, "vaisahk": 1, "vaisakha": 1,
+    "besakh": 1, "beshakha": 1,
     # Devanagari canonical + variants
     "बैशाख": 1, "बैसाख": 1, "बिशाख": 1, "वैशाख": 1,
 
     # ── Month 2 — Jestha ───────────────────────────────────────────────────
     # canonical + common alternatives
     "jestha": 2, "jeth": 2, "jaistha": 2, "jaishtha": 2,
-    "jyestha": 2, "jyaistha": 2,
+    "jyeshtha": 2, "jyaistha": 2,
     # spelling-mistake variants (roman)
     "jesta": 2, "jesth": 2, "jetha": 2, "jeshtha": 2,
     "jaitha": 2, "jeistha": 2, "jesatha": 2, "jjestha": 2,
@@ -301,11 +304,11 @@ _BS_MONTH_ALIASES: dict[str, int] = {
 
     # ── Month 3 — Ashadh ───────────────────────────────────────────────────
     # canonical + common alternatives
-    "ashadh": 3, "asar": 3, "ashad": 3, "ashar": 3, "asadh": 3,
-    "aasar": 3, "aasadh": 3, "ashadha": 3,
+    "ashadh": 3, "asaar": 3, "ashad": 3, "ashar": 3, "asadh": 3,
+    "aasaar": 3, "aasadh": 3, "ashadha": 3,
     # spelling-mistake variants (roman)
-    "asad": 3, "asadha": 3, "ashadha": 3, "aashar": 3,
-    "ashad": 3, "ashada": 3, "aaashar": 3, "assar": 3,
+    "asad": 3, "asadha": 3, "aashar": 3,
+    "ashada": 3, "aaashar": 3, "assar": 3,
     "aasad": 3, "ashardh": 3,
     # Devanagari canonical + variants
     "असार": 3, "आसार": 3, "असाढ": 3, "आषाढ": 3,
@@ -313,11 +316,11 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     # ── Month 4 — Shrawan ──────────────────────────────────────────────────
     # canonical + common alternatives
     "shrawan": 4, "sawan": 4, "saun": 4, "shrawn": 4,
-    "shraawan": 4, "shravan": 4, "srabon": 4,
+    "shraawan": 4, "shravan": 4, "srabon": 4, "shawan":4, "sraban": 4,
     # spelling-mistake variants (roman)
     "shrawaan": 4, "sraawan": 4, "shreawan": 4, "shrawon": 4,
     "shrabn": 4, "sharwan": 4, "sharawn": 4, "shrwan": 4,
-    "shaun": 4, "saawn": 4, "sraavn": 4,
+    "shaun": 4, "saawn": 4, "sraavn": 4, "shravana": 4,
     # Devanagari canonical + variants
     "साउन": 4, "सावन": 4, "श्रावण": 4, "शावन": 4,
 
@@ -326,29 +329,28 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     "bhadra": 5, "bhadau": 5, "bhadon": 5,
     "bhaadra": 5, "bhadro": 5,
     # spelling-mistake variants (roman)
-    "bhaadra": 5, "bhadara": 5, "bhadara": 5, "bhadaa": 5,
+    "bhadara": 5, "bhadaa": 5,
     "bhadou": 5, "bhadaau": 5, "bhadoo": 5, "bhadaw": 5,
-    "bhadraa": 5, "bhardo": 5, "bhadar": 5,
+    "bhadraa": 5, "bhardo": 5, "bhadar": 5, "bhadrapada" : 5,
     # Devanagari canonical + variants
-    "भदौ": 5, "भाद्र": 5, "भदो": 5,
+    "भदौ": 5, "भाद्र": 5, "भदो": 5, "भाद्रपद": 5,
 
     # ── Month 6 — Ashwin ───────────────────────────────────────────────────
     # canonical + common alternatives
     "ashwin": 6, "asoj": 6, "aswin": 6, "ashvin": 6,
     "aashwin": 6, "aswoj": 6, "ashwoj": 6,
     # spelling-mistake variants (roman)
-    "ashwin": 6, "aashwin": 6, "ashween": 6, "ashvin": 6,
-    "ashveen": 6, "aswin": 6, "aswinn": 6, "asshwin": 6,
-    "assoj": 6, "asoj": 6, "azoj": 6, "asswin": 6,
+    "ashween": 6, "ashveen": 6, "aswinn": 6, "asshwin": 6,
+    "assoj": 6, "azoj": 6, "asswin": 6, "ashvina": 6,
     # Devanagari canonical + variants
     "असोज": 6, "आसोज": 6, "अश्विन": 6, "आश्विन": 6,
 
     # ── Month 7 — Kartik ───────────────────────────────────────────────────
     # canonical + common alternatives
     "kartik": 7, "kartika": 7, "katik": 7, "karthik": 7,
-    "kartick": 7,
+    "kartick": 7, 
     # spelling-mistake variants (roman)
-    "kartick": 7, "karttik": 7, "kartikk": 7, "kaartik": 7,
+    "karttik": 7, "kartikk": 7, "kaartik": 7,
     "karteak": 7, "kartikha": 7, "karthika": 7, "katika": 7,
     "kattik": 7, "kartic": 7, "karteek": 7,
     # Devanagari canonical + variants
@@ -357,7 +359,7 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     # ── Month 8 — Mangsir ──────────────────────────────────────────────────
     # canonical + common alternatives
     "mangsir": 8, "margashir": 8, "mansir": 8, "mangshir": 8,
-    "marga": 8, "margashirsha": 8,
+    "margashirsha": 8,
     # spelling-mistake variants (roman)
     "mangseer": 8, "manshir": 8, "mangsheer": 8, "mangasir": 8,
     "mangsirr": 8, "mangsire": 8, "manngsir": 8, "mangsiir": 8,
@@ -370,9 +372,9 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     "poush": 9, "push": 9, "paush": 9, "pus": 9, "poos": 9,
     "pаush": 9,
     # spelling-mistake variants (roman)
-    "pouush": 9, "poosh": 9, "poush": 9, "phouush": 9,
-    "poush": 9, "posh": 9, "poush": 9, "pus": 9,
-    "paush": 9, "paaus": 9, "pauush": 9,
+    "pouush": 9, "poosh": 9, "phouush": 9,
+    "posh": 9,"paaus": 9, "pauush": 9, 
+    "pausha": 9, "pusha": 9,
     # Devanagari canonical + variants
     "पुष": 9, "पुस": 9, "पौष": 9, "पूस": 9,
 
@@ -381,9 +383,9 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     "magh": 10, "maagh": 10, "maag": 10,
     # spelling-mistake variants (roman)
     "mag": 10, "magg": 10, "maagha": 10, "magha": 10,
-    "maakh": 10, "maaghh": 10, "magh": 10,
+    "maakh": 10, "maaghh": 10,
     # Devanagari canonical + variants
-    "माघ": 10, "माघ": 10, 
+    "माघ": 10,
     
     # ── Month 11 — Falgun ──────────────────────────────────────────────────
     # canonical + common alternatives
@@ -391,7 +393,7 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     "phalgun": 11, "phaagun": 11,
     # spelling-mistake variants (roman)
     "falgan": 11, "phaalgun": 11, "falgunn": 11, "falgon": 11,
-    "falgen": 11, "phaagoon": 11, "phaaganun": 11, "falugn": 11,
+    "falgen": 11, "phaagoon": 11, "falugn": 11,
     "phalugna": 11, "phaalguna": 11,
     # Devanagari canonical + variants
     "फाल्गुण": 11, "फागुन": 11, "फाल्गुन": 11, "फागून": 11,
@@ -400,8 +402,8 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     # canonical + common alternatives
     "chaitra": 12, "chait": 12, "chaitta": 12, "chaita": 12,
     # spelling-mistake variants (roman)
-    "chaiter": 12, "chaitraa": 12, "chaitrra": 12, "chatra": 12,
-    "chaitra": 12, "chaeta": 12, "chyaitra": 12, "chaaitr": 12,
+    "chaiter": 12, "chaitraa": 12, "chaitrra": 12,
+    "chaeta": 12, "chyaitra": 12, "chaaitr": 12,
     "chaetra": 12, "chaeit": 12,
     # Devanagari canonical + variants
     "चैत्र": 12, "चैत": 12, "चैत्रा": 12, "चैत्": 12,
@@ -525,10 +527,12 @@ def weekday_name_from_devanagari(deva_name: str) -> str:
 _AD_MONTH_ALIASES: dict[str, int] = {
     # January — canonical + spelling mistakes
     "january": 1,  "jan": 1,  "1": 1,
-    "januray": 1, "januery": 1, "janaury": 1, "janury": 1, "janury": 1,
+    "januray": 1, "januery": 1, "janaury": 1, 
+    "janury": 1, "janwari": 1, "janwary": 1,
     # February — canonical + spelling mistakes
     "february": 2, "feb": 2,  "2": 2,
-    "febuary": 2,  "feburary": 2, "februray": 2, "febrary": 2,
+    "febuary": 2,  "feburary": 2, "februray": 2, 
+    "febrary": 2, "febrari": 2,
     # March — canonical + spelling mistakes
     "march": 3,    "mar": 3,  "3": 3,
     "marck": 3,   "mach": 3,  "marsch": 3,
@@ -536,17 +540,17 @@ _AD_MONTH_ALIASES: dict[str, int] = {
     "april": 4,    "apr": 4,  "4": 4,
     "apirl": 4,   "aprl": 4,  "aprill": 4, "apryl": 4,
     # May — canonical + spelling mistakes
-    "may": 5,                 "5": 5,
-    "maay": 5,    "maye": 5,
+    "may": 5,   "5": 5,
+    "maay": 5,    "maye": 5, "mey": 5,
     # June — canonical + spelling mistakes
     "june": 6,     "jun": 6,  "6": 6,
-    "juune": 6,   "juen": 6,  "june": 6,
+    "juune": 6,   "juen": 6,  "joon": 6,
     # July — canonical + spelling mistakes
     "july": 7,     "jul": 7,  "7": 7,
-    "juuly": 7,   "jully": 7, "julye": 7,
+    "juuly": 7,   "jully": 7, "julye": 7, "julai": 7,
     # August — canonical + spelling mistakes
-    "august": 8,   "aug": 8,  "8": 8,
-    "augist": 8,  "agust": 8, "augest": 8, "augustt": 8,
+    "august": 8,   "aug": 8,  "8": 8, "agast" : 8, "agust": 8,
+    "augist": 8,  "augest": 8, "augustt": 8,
     # September — canonical + spelling mistakes
     "september": 9, "sep": 9, "sept": 9, "9": 9,
     "setember": 9, "septmber": 9, "septembar": 9, "septembe": 9,
@@ -606,11 +610,11 @@ _WEEKDAY_ALIASES: dict[str, int] = {
     "monday": 0,    "tuesday": 1,  "wednesday": 2, "thursday": 3,
     "friday": 4,    "saturday": 5, "sunday": 6,
     # English full-name spelling mistakes
-    "mondey": 0,  "moonday": 0,  "moday": 0,   "munday": 0,
-    "tuseday": 1, "tusday": 1,   "teusday": 1, "thuseday": 1,
+    "mondey": 0,  "moonday": 0,  "moday": 0,   "munday": 0, "manday": 0,
+    "tuseday": 1, "tusday": 1,   "teusday": 1, "thuseday": 1, 
     "wendsday": 2, "wensday": 2, "wednseday": 2, "wednsday": 2,
-    "thurdsay": 3, "thursay": 3, "thurday": 3, "firday": 4,
-    "fryday": 4,  "friay": 4,
+    "thurdsay": 3, "thursay": 3, "thurday": 3, "thirsday": 3, "thusday": 3,
+    "firday": 4,  "fryday": 4,  "friay": 4,
     "saterday": 5, "saturdy": 5, "satarday": 5,
     "sunady": 6,  "sonday": 6,  "sunnday": 6,
     # ── English 3-letter abbreviations ─────────────────────────────────────
@@ -621,27 +625,27 @@ _WEEKDAY_ALIASES: dict[str, int] = {
     "mo": 0, "tu": 1, "we": 2, "th": 3, "fr": 4, "sa": 5, "su": 6,
     # ── Nepali romanised names (canonical forms) ────────────────────────────
     "sombar": 0,    "mangalbar": 1, "budhabar": 2,
-    "bihibar": 3,   "sukrabar": 4,  "sanibar": 5,  "aaitabar": 6,
+    "bihibar": 3,   "sukrabar": 4,  "sanibar": 5,  "aaitabar": 6, "aitabaar": 6, "aaitabaar": 6,
     # ── Common Nepali romanised variants ───────────────────────────────────
-    "somabar": 0,   "soma": 0,
+    "somabar": 0,   "soma": 0, "som": 0,
     "mangal": 1,    "mangala": 1,
-    "budha": 2,
-    "bihivar": 3,   "brihaspatibar": 3,
+    "budha": 2,   "budh": 2, "budhvar": 2, 
+    "bihivar": 3,   "brihaspatibar": 3, "gurubar": 3, "guruvar": 3, 
     "sukra": 4,     "shukra": 4,    "shukrabar": 4,
     "shani": 5,     "shanibar": 5,
-    "aaita": 6,     "aita": 6,      "aitabar": 6,  "rabibar": 6,
+    "aaita": 6,     "aita": 6,      "aitabar": 6,  "rabibar": 6, "ravivar": 6, "ravi": 6, "itvar": 6,
     # ── Nepali romanised spelling mistakes ─────────────────────────────────
     # Sombar / Somabar (Monday)
-    "sombaar": 0,  "sombar": 0,   "sombara": 0,  "sombarr": 0,
+    "sombara": 0,  "sombarr": 0,
     "somabaar": 0, "somabarr": 0, "somabara": 0,
     # Mangalbar (Tuesday)
     "mangalbaar": 1, "mangalbarr": 1, "mangalbara": 1,
-    "mangalbaar": 1, "mangelbar": 1,  "mangalvaar": 1,
+    "mangelbar": 1,  "mangalvaar": 1,
     # Budhabar (Wednesday)
     "budhabaar": 2, "budhabarr": 2, "budhab": 2,
     "budhaabar": 2, "budhavar": 2,  "budaabar": 2,
     # Bihibar (Thursday)
-    "bihikar": 3,  "bihibarr": 3, "bihibaar": 3,
+    "bihibarr": 3, "bihibaar": 3,
     "bihaabar": 3, "bihavar": 3,  "brihaspati": 3,
     # Sukrabar (Friday)
     "sukravar": 4, "sukrabaar": 4, "sukrabarr": 4,
@@ -658,19 +662,19 @@ _WEEKDAY_ALIASES: dict[str, int] = {
     "बिहीबार": 3,  "शुक्रबार": 4, "शनिबार": 5,   "आइतबार": 6,
     # ── Devanagari spelling-mistake / alternate forms ───────────────────────
     # Monday variants
-    "सोमवार": 0,  "सोमबार": 0,  "सोम": 0,
+    "सोमवार": 0, "सोम": 0,
     # Tuesday variants
-    "मंगलवार": 1, "मंगल": 1,    "मङ्गलबार": 1,
+    "मंगलवार": 1, "मंगल": 1,    "मङ्गलबार": 1, "मङ्गल": 1, 
     # Wednesday variants
     "बुधवार": 2,  "बुध": 2,     "बुद्धबार": 2,
     # Thursday variants
-    "बिहिबार": 3, "बिहीवार": 3, "बृहस्पतिबार": 3,
+    "बिहिबार": 3, "बिहीवार": 3, "बृहस्पतिबार": 3, "गुरुवार": 3, "गुरुबार": 3, "बिहि":3, "बिही":3,
     # Friday variants
-    "शुक्रवार": 4, "शुक्र": 4,  "शुक्राबार": 4,
+    "शुक्रवार": 4, "शुक्र": 4,  "शुक्राबार": 4, "सुक्रबार": 4, 
     # Saturday variants
-    "शनिवार": 5,  "शनि": 5,    "शनीबार": 5,
+    "शनिवार": 5,  "शनि": 5, "शनीबार": 5,"सनिबार": 5, "शानिबार": 5,
     # Sunday variants
-    "आइतवार": 6,  "आइत": 6,    "रविबार": 6,    "रबिबार": 6,
+    "आइतवार": 6,  "आइत": 6,    "रविबार": 6,    "रबिबार": 6, "इतवार": 6, "इतबार": 6, "रबिवार": 6,
 }
 
 
@@ -912,7 +916,24 @@ class DateRange:
             parts.insert(0, f"  [{self.label}]")
         return "\n".join(parts)
 
+    # -- Range Algebra ------------------------------------------------------
 
+    def contains_date(self, date_obj: "Any") -> bool:
+        """Check if a date (datetime.date, datetime.datetime, or NepaliDateTime) falls in this range."""
+        value = getattr(date_obj, "dt", date_obj)
+        d = value.date() if hasattr(value, "date") else value
+        return self.start_ad <= d <= self.end_ad
+
+    def overlaps(self, other: "DateRange") -> bool:
+        """Check if this period overlaps with another DateRange."""
+        return max(self.start_ad, other.start_ad) <= min(self.end_ad, other.end_ad)
+
+    def intersection(self, other: "DateRange") -> "DateRange | None":
+        """Return the intersecting DateRange, or None if disjoint."""
+        start = max(self.start_ad, other.start_ad)
+        end = min(self.end_ad, other.end_ad)
+        return DateRange(start, end, label=f"({self.label} ∩ {other.label})") if start <= end else None
+    
 # -- Helper: current BS year / AD year ------------------------------------
 
 def current_bs_year() -> int:
@@ -1029,8 +1050,7 @@ def ad_month_to_bs_range(
     last_day  = _calendar.monthrange(ad_year, month_num)[1]
     start_ad  = datetime.date(ad_year, month_num, 1)
     end_ad    = datetime.date(ad_year, month_num, last_day)
-    import datetime as _dt
-    month_name = _dt.date(ad_year, month_num, 1).strftime("%B")
+    month_name = datetime.date(ad_year, month_num, 1).strftime("%B")
     return DateRange(start_ad, end_ad, label=f"AD {month_name} {ad_year}")
 
 
@@ -1111,9 +1131,8 @@ def ad_quarter_to_bs_range(
     m_start, m_end = _AD_QUARTER_MONTHS[quarter]
     start_ad = datetime.date(ad_year, m_start, 1)
     end_ad   = datetime.date(ad_year, m_end, _calendar.monthrange(ad_year, m_end)[1])
-    import datetime as _dt
-    s_name = _dt.date(ad_year, m_start, 1).strftime("%b")
-    e_name = _dt.date(ad_year, m_end,   1).strftime("%b")
+    s_name = datetime.date(ad_year, m_start, 1).strftime("%b")
+    e_name = datetime.date(ad_year, m_end,   1).strftime("%b")
     return DateRange(start_ad, end_ad, label=f"AD Q{quarter} {ad_year}: {s_name}–{e_name}")
 
 
@@ -1200,9 +1219,8 @@ def ad_half_to_bs_range(
     m_start, m_end = _AD_HALF_MONTHS[h]
     start_ad = datetime.date(ad_year, m_start, 1)
     end_ad   = datetime.date(ad_year, m_end, _calendar.monthrange(ad_year, m_end)[1])
-    import datetime as _dt
-    s_name = _dt.date(ad_year, m_start, 1).strftime("%b")
-    e_name = _dt.date(ad_year, m_end,   1).strftime("%b")
+    s_name = datetime.date(ad_year, m_start, 1).strftime("%b")
+    e_name = datetime.date(ad_year, m_end,   1).strftime("%b")
     return DateRange(start_ad, end_ad, label=f"AD H{h} {ad_year}: {s_name}–{e_name}")
 
 
@@ -1226,6 +1244,74 @@ FIELD_WEEK        : str = "week"
 FIELD_FORTNIGHT   : str = "fortnight"
 FIELD_YEARS       : str = "years"    # plural form used in plus/minus kwargs
 FIELD_MONTHS      : str = "months"   # plural form used in plus/minus kwargs
+
+# ---------------------------------------------------------------------------
+# GROUPING / ANALYTICS STRING CONSTANTS
+# ---------------------------------------------------------------------------
+DAY_LITERAL        : str = "day"
+WEEK_LITERAL       : str = "week"
+MONTH_LITERAL      : str = "month"
+QUARTER_LITERAL    : str = "quarter"
+HALF_LITERAL       : str = "half"
+YEAR_LITERAL       : str = "year"
+
+TODAY_LITERAL      : str = "today"
+YESTERDAY_LITERAL  : str = "yesterday"
+TOMORROW_LITERAL   : str = "tomorrow"
+DAY_AFTER_TOMORROW_LITERAL : str = "day_after_tomorrow"
+
+THIS_WEEK_LITERAL  : str = "this_week"
+LAST_WEEK_LITERAL  : str = "last_week"
+NEXT_WEEK_LITERAL  : str = "next_week"
+
+THIS_MONTH_LITERAL : str = "this_month"
+LAST_MONTH_LITERAL : str = "last_month"
+NEXT_MONTH_LITERAL : str = "next_month"
+
+THIS_YEAR_LITERAL  : str = "this_year"
+LAST_YEAR_LITERAL  : str = "last_year"
+NEXT_YEAR_LITERAL  : str = "next_year"
+
+ROLLING_7_LITERAL  : str = "rolling_7"
+ROLLING_30_LITERAL : str = "rolling_30"
+
+AAJA_LITERAL       : str = "aaja"
+HIJO_LITERAL       : str = "hijo"
+BHOLI_LITERAL      : str = "bholi"
+
+AAJA_DEVA_LITERAL       : str = "आज"
+HIJO_DEVA_LITERAL       : str = "हिजो"
+BHOLI_DEVA_LITERAL      : str = "भोलि"
+PARSI_DEVA_LITERAL      : str = "पर्सि"
+
+YOHAPTA_DEVA_LITERAL    : str = "यो_हप्ता"
+GATAHAPTA_DEVA_LITERAL  : str = "गत_हप्ता"
+AAGAMIHAPTA_DEVA_LITERAL: str = "आगामी_हप्ता"
+
+YOMAHINA_DEVA_LITERAL   : str = "यो_महिना"
+GATAMAHINA_DEVA_LITERAL : str = "गत_महिना"
+AAGAMIMAHINA_DEVA_LITERAL: str = "आगामी_महिना"
+
+YOBARSA_DEVA_LITERAL    : str = "यो_वर्ष"
+GATABARSA_DEVA_LITERAL  : str = "गत_वर्ष"
+AAGAMIBARSA_DEVA_LITERAL: str = "आगामी_वर्ष"
+
+CURRENT_WEEK_LITERAL    : str = "current_week"
+GATAHAPTA_LITERAL       : str = "gata_hapta"
+AAGAMIHAPTA_LITERAL     : str = "aagami_hapta"
+CURRENT_MONTH_LITERAL   : str = "current_month"
+GATAMAHINA_LITERAL      : str = "gata_mahina"
+AAGAMIMAHINA_LITERAL    : str = "aagami_mahina"
+YOBARSA_LITERAL         : str = "yo_barsa"
+GATABARSA_LITERAL       : str = "gata_barsa"
+AAGAMIBARSA_LITERAL     : str = "aagami_barsa"
+
+PASHILLO_7_DEVA_LITERAL : str = "पछिल्लो_७_दिन"
+PASHILLO_30_DEVA_LITERAL: str = "पछिल्लो_३०_दिन"
+PAST_7_DAYS_LITERAL     : str = "past_7_days"
+ROLLING_7_DAYS_LITERAL  : str = "rolling_7_days"
+PAST_30_DAYS_LITERAL    : str = "past_30_days"
+ROLLING_30_DAYS_LITERAL : str = "rolling_30_days"
 
 # ---------------------------------------------------------------------------
 # NepaliDateTime — a thin wrapper that stores a UTC datetime internally
@@ -1341,7 +1427,7 @@ class NepaliDateTime:
                 millisecond: int = 0) -> NepaliDateTime:
         """Build from AD date components."""
         dt = datetime.datetime(year, month, day,
-                               hour, minute, second, millisecond * 1000)
+                          hour, minute, second, millisecond * 1000)
         return cls(dt)
 
     @classmethod
@@ -2055,3 +2141,223 @@ def bs_month_calendar(year: int, month: int) -> List[List[Optional[int]]]:
 
     # chunk into weeks
     return [cells[i:i+7] for i in range(0, len(cells), 7)]
+
+# ---------------------------------------------------------------------------
+# PHRASE ALIASES
+# Maps English, Romanised Nepali, and Devanagari phrases to a single canonical key
+# ---------------------------------------------------------------------------
+_PHRASE_ALIASES: Dict[str, str] = {
+    # Points
+    TODAY_LITERAL: TODAY_LITERAL, AAJA_DEVA_LITERAL: TODAY_LITERAL, AAJA_LITERAL: TODAY_LITERAL,
+    YESTERDAY_LITERAL: YESTERDAY_LITERAL, HIJO_DEVA_LITERAL: YESTERDAY_LITERAL, HIJO_LITERAL: YESTERDAY_LITERAL,
+    TOMORROW_LITERAL: TOMORROW_LITERAL, BHOLI_DEVA_LITERAL: TOMORROW_LITERAL, BHOLI_LITERAL: TOMORROW_LITERAL,
+    # Weekly
+    THIS_WEEK_LITERAL: THIS_WEEK_LITERAL, YOHAPTA_DEVA_LITERAL: THIS_WEEK_LITERAL, CURRENT_WEEK_LITERAL: THIS_WEEK_LITERAL,
+    LAST_WEEK_LITERAL: LAST_WEEK_LITERAL, GATAHAPTA_DEVA_LITERAL: LAST_WEEK_LITERAL, GATAHAPTA_LITERAL: LAST_WEEK_LITERAL,
+    NEXT_WEEK_LITERAL: NEXT_WEEK_LITERAL, AAGAMIHAPTA_DEVA_LITERAL: NEXT_WEEK_LITERAL, AAGAMIHAPTA_LITERAL: NEXT_WEEK_LITERAL,
+    # Monthly
+    THIS_MONTH_LITERAL: THIS_MONTH_LITERAL, YOMAHINA_DEVA_LITERAL: THIS_MONTH_LITERAL, CURRENT_MONTH_LITERAL: THIS_MONTH_LITERAL,
+    LAST_MONTH_LITERAL: LAST_MONTH_LITERAL, GATAMAHINA_DEVA_LITERAL: LAST_MONTH_LITERAL, GATAMAHINA_LITERAL: LAST_MONTH_LITERAL,
+    NEXT_MONTH_LITERAL: NEXT_MONTH_LITERAL, AAGAMIMAHINA_DEVA_LITERAL: NEXT_MONTH_LITERAL, AAGAMIMAHINA_LITERAL: NEXT_MONTH_LITERAL,
+    # Yearly
+    THIS_YEAR_LITERAL: THIS_YEAR_LITERAL, YOBARSA_DEVA_LITERAL: THIS_YEAR_LITERAL, YOBARSA_LITERAL: THIS_YEAR_LITERAL,
+    LAST_YEAR_LITERAL: LAST_YEAR_LITERAL, GATABARSA_DEVA_LITERAL: LAST_YEAR_LITERAL, GATABARSA_LITERAL: LAST_YEAR_LITERAL,
+    NEXT_YEAR_LITERAL: NEXT_YEAR_LITERAL, AAGAMIBARSA_DEVA_LITERAL: NEXT_YEAR_LITERAL, AAGAMIBARSA_LITERAL: NEXT_YEAR_LITERAL,
+    # Rolling Windows
+    ROLLING_7_DAYS_LITERAL: ROLLING_7_LITERAL, PAST_7_DAYS_LITERAL: ROLLING_7_LITERAL, PASHILLO_7_DEVA_LITERAL: ROLLING_7_LITERAL,
+    ROLLING_30_DAYS_LITERAL: ROLLING_30_LITERAL, PAST_30_DAYS_LITERAL: ROLLING_30_LITERAL, PASHILLO_30_DEVA_LITERAL: ROLLING_30_LITERAL,
+}
+
+# ---------------------------------------------------------------------------
+# PHRASE RESOLVERS REGISTRY
+# Maps canonical phrase -> lambda taking (ref_date, is_bs) explicitly returning DateRange
+# ---------------------------------------------------------------------------
+_DAY_DELTA = lambda n: datetime.timedelta(days=n)
+
+def _resolve_month_relative(r: datetime.date, bs: bool, offset: int = 0) -> DateRange:
+    if bs:
+        y, m = ad_to_bs(r)[:2]
+        target_m = (m - 1 + offset) % 12 + 1
+        target_y = y + (m - 1 + offset) // 12
+        return bs_month_to_ad_range(target_m, target_y)
+    
+    target_m = (r.month - 1 + offset) % 12 + 1
+    target_y = r.year + (r.month - 1 + offset) // 12
+    return ad_month_to_bs_range(target_m, target_y)
+
+def _resolve_year_relative(r: datetime.date, bs: bool, offset: int = 0) -> DateRange:
+    if bs:
+        return bs_year_to_ad_range(ad_to_bs(r)[0] + offset)
+    return ad_year_to_bs_range(r.year + offset)
+
+_PHRASE_RESOLVERS: Dict[str, Callable[[datetime.date, bool], DateRange]] = {
+    TODAY_LITERAL: lambda r, bs: DateRange(r, r, label="Today"),
+    YESTERDAY_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(1), r - _DAY_DELTA(1), label="Yesterday"),
+    TOMORROW_LITERAL: lambda r, bs: DateRange(r + _DAY_DELTA(1), r + _DAY_DELTA(1), label="Tomorrow"),
+    
+    THIS_WEEK_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(r.weekday()), r + _DAY_DELTA(6 - r.weekday()), label="This Week"),
+    LAST_WEEK_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(r.weekday() + 7), r - _DAY_DELTA(r.weekday() + 1), label="Last Week"),
+    NEXT_WEEK_LITERAL: lambda r, bs: DateRange(r + _DAY_DELTA(7 - r.weekday()), r + _DAY_DELTA(13 - r.weekday()), label="Next Week"),
+    
+    ROLLING_7_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(6), r, label="Last 7 Days"),
+    ROLLING_30_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(29), r, label="Last 30 Days"),
+
+    # Calendar Aware Resolvers (Evaluates AD->BS or AD->AD dynamically)
+    THIS_MONTH_LITERAL: lambda r, bs: _resolve_month_relative(r, bs, 0),
+    LAST_MONTH_LITERAL: lambda r, bs: _resolve_month_relative(r, bs, -1),
+    NEXT_MONTH_LITERAL: lambda r, bs: _resolve_month_relative(r, bs, 1),
+    
+    THIS_YEAR_LITERAL: lambda r, bs: _resolve_year_relative(r, bs, 0),
+    LAST_YEAR_LITERAL: lambda r, bs: _resolve_year_relative(r, bs, -1),
+    NEXT_YEAR_LITERAL: lambda r, bs: _resolve_year_relative(r, bs, 1),
+}
+
+# ---------------------------------------------------------------------------
+# ABSOLUTE PERIOD GENERATORS
+# Generate a sequence of contiguous buckets over an AD window
+# ---------------------------------------------------------------------------
+def _generate_months(min_d: datetime.date, max_d: datetime.date, is_bs: bool) -> List[DateRange]:
+    """Helper to calculate month intervals for both AD and BS calendars."""
+    start_y, start_m = ad_to_bs(min_d)[:2] if is_bs else (min_d.year, min_d.month)
+    end_y, end_m = ad_to_bs(max_d)[:2] if is_bs else (max_d.year, max_d.month)
+    total_months = (end_y - start_y) * 12 + (end_m - start_m) + 1
+    
+    return [
+        bs_month_to_ad_range((start_m - 1 + i) % 12 + 1, start_y + (start_m - 1 + i) // 12) if is_bs 
+        else ad_month_to_bs_range((start_m - 1 + i) % 12 + 1, start_y + (start_m - 1 + i) // 12)
+        for i in range(total_months)
+    ]
+
+def _generate_quarters(min_d: datetime.date, max_d: datetime.date, is_bs: bool) -> List[DateRange]:
+    """Helper to calculate quarter (3-month) intervals for both AD and BS calendars."""
+    start_y, start_m = ad_to_bs(min_d)[:2] if is_bs else (min_d.year, min_d.month)
+    end_y, end_m = ad_to_bs(max_d)[:2] if is_bs else (max_d.year, max_d.month)
+    start_q, end_q = (start_m - 1) // 3 + 1, (end_m - 1) // 3 + 1
+    total_quarters = (end_y - start_y) * 4 + (end_q - start_q) + 1
+    
+    return [
+        bs_quarter_to_ad_range((start_q - 1 + i) % 4 + 1, start_y + (start_q - 1 + i) // 4) if is_bs 
+        else ad_quarter_to_bs_range((start_q - 1 + i) % 4 + 1, start_y + (start_q - 1 + i) // 4)
+        for i in range(total_quarters)
+    ]
+
+def _generate_halves(min_d: datetime.date, max_d: datetime.date, is_bs: bool) -> List[DateRange]:
+    """Helper to calculate half-year (6-month) intervals for both AD and BS calendars."""
+    start_y, start_m = ad_to_bs(min_d)[:2] if is_bs else (min_d.year, min_d.month)
+    end_y, end_m = ad_to_bs(max_d)[:2] if is_bs else (max_d.year, max_d.month)
+    start_h, end_h = (start_m - 1) // 6 + 1, (end_m - 1) // 6 + 1
+    total_halves = (end_y - start_y) * 2 + (end_h - start_h) + 1
+    
+    return [
+        bs_half_to_ad_range((start_h - 1 + i) % 2 + 1, start_y + (start_h - 1 + i) // 2) if is_bs 
+        else ad_half_to_bs_range((start_h - 1 + i) % 2 + 1, start_y + (start_h - 1 + i) // 2)
+        for i in range(total_halves)
+    ]
+
+def _generate_weeks(min_d: datetime.date, max_d: datetime.date, bs: bool) -> List[DateRange]:
+    start_w = min_d - _DAY_DELTA(min_d.weekday())
+    total_weeks = (max_d - start_w).days // 7 + 1
+    return [
+        DateRange(start_w + _DAY_DELTA(i * 7), start_w + _DAY_DELTA(i * 7 + 6), label=f"Week of {start_w + _DAY_DELTA(i * 7)}")
+        for i in range(total_weeks)
+    ]
+
+_PERIOD_GENERATORS: Dict[str, Callable[[datetime.date, datetime.date, bool], Iterable[DateRange]]] = {
+    DAY_LITERAL: lambda min_d, max_d, bs: [
+        DateRange(min_d + _DAY_DELTA(i), min_d + _DAY_DELTA(i), label=str(min_d + _DAY_DELTA(i))) 
+        for i in range((max_d - min_d).days + 1)
+    ],
+    WEEK_LITERAL: _generate_weeks,
+    MONTH_LITERAL: _generate_months,
+    QUARTER_LITERAL: _generate_quarters,
+    HALF_LITERAL: _generate_halves,
+    YEAR_LITERAL: lambda min_d, max_d, bs: [
+        bs_year_to_ad_range(y) if bs else ad_year_to_bs_range(y)
+        for y in range(
+            (ad_to_bs(min_d)[0] if bs else min_d.year),
+            (ad_to_bs(max_d)[0] if bs else max_d.year) + 1
+        )
+    ]
+}
+
+_DEVA_TRANS_MAP = str.maketrans(_DEVANAGARI_DIGIT_REVERSE) if '_DEVANAGARI_DIGIT_REVERSE' in globals() else None
+
+# Helper to process devanagari phrase conversion correctly
+def _to_ascii_phrase(phrase: str) -> str:
+    if not isinstance(phrase, str):
+        return phrase
+    # Convert devanagari to english mapping
+    for key, val in {
+        AAJA_DEVA_LITERAL: TODAY_LITERAL, HIJO_DEVA_LITERAL: YESTERDAY_LITERAL, BHOLI_DEVA_LITERAL: TOMORROW_LITERAL, PARSI_DEVA_LITERAL: DAY_AFTER_TOMORROW_LITERAL,
+        YOHAPTA_DEVA_LITERAL: THIS_WEEK_LITERAL, GATAHAPTA_DEVA_LITERAL: LAST_WEEK_LITERAL, AAGAMIHAPTA_DEVA_LITERAL: NEXT_WEEK_LITERAL,
+        YOMAHINA_DEVA_LITERAL: THIS_MONTH_LITERAL, GATAMAHINA_DEVA_LITERAL: LAST_MONTH_LITERAL, AAGAMIMAHINA_DEVA_LITERAL: NEXT_MONTH_LITERAL,
+        YOBARSA_DEVA_LITERAL: THIS_YEAR_LITERAL, GATABARSA_DEVA_LITERAL: LAST_YEAR_LITERAL, AAGAMIBARSA_DEVA_LITERAL: NEXT_YEAR_LITERAL,
+        PASHILLO_7_DEVA_LITERAL: ROLLING_7_LITERAL, PASHILLO_30_DEVA_LITERAL: ROLLING_30_LITERAL
+    }.items():
+        if phrase == key:
+            return val
+    return phrase.translate(_DEVA_TRANS_MAP).lower() if _DEVA_TRANS_MAP else phrase.lower()
+
+def _normalize_input(entry: Any, fallback_bs: bool = True) -> datetime.date:
+    """Safely extracts a naive datetime.date from various object sources."""
+    try:
+        if hasattr(entry, "dt"):
+            return entry.dt.date()
+        if hasattr(entry, "date") and callable(entry.date):
+            return entry.date()
+        if isinstance(entry, datetime.date):
+            return entry
+            
+        str_val = str(entry).translate(_DEVA_TRANS_MAP) if _DEVA_TRANS_MAP else str(entry)
+        if fallback_bs:
+            return NepaliDateTime.parse(str_val).dt.date()
+        return datetime.datetime.fromisoformat(str_val).date()
+    except Exception as e:
+        raise ValueError(f"Could not normalize input to canonical AD date: {entry}. Reason: {e}")
+
+def _resolve_relative(phrase: str, ref_dt: datetime.date, is_bs: bool) -> DateRange:
+    """Resolve a relative string using the registry, or via regular expression offset fallback."""
+    ascii_phr = _to_ascii_phrase(phrase.strip())
+    key = _PHRASE_ALIASES.get(ascii_phr.replace(" ", "_"), ascii_phr)
+
+    if key in _PHRASE_RESOLVERS:
+        return _PHRASE_RESOLVERS[key](ref_dt, is_bs)
+    
+    match = _RELATIVE_PATTERN.match(key)
+    if not match:
+        raise ValueError(f"Unrecognised relative phrase: {phrase}")
+    
+    val, unit = int(match.group(1)), match.group(2)
+    start_d = ref_dt - _DAY_DELTA(val * (7 if unit == WEEK_LITERAL else 1))
+    
+    if unit == WEEK_LITERAL:
+        return DateRange(start_d - _DAY_DELTA(start_d.weekday()), start_d + _DAY_DELTA(6 - start_d.weekday()), label=phrase)
+    return DateRange(start_d, start_d, label=phrase)
+
+def group_dates(
+    dates: List[Any],
+    by: str | List[str],
+    calendar: Literal["BS", "AD"] = "BS",
+    ref_date: datetime.date | None = None
+) -> Dict[str, List[Any]]:
+    """
+    Groups a mixed list of AD/BS objects, strings & numerals into bucketed periods.
+    """
+    ref_dt = ref_date or datetime.date.today()
+    is_bs = calendar.upper() == "BS"
+    
+    # 1. Normalize all inputs paired with original objects
+    canonicals = [(orig, _normalize_input(orig, is_bs)) for orig in dates]
+    if not canonicals:
+        return {}
+
+    # 2. Resolve buckets (either generated dynamically or explicitly requested)
+    buckets: List[DateRange] = (
+        [_resolve_relative(phrase, ref_dt, is_bs) for phrase in by] if isinstance(by, list) else
+        _PERIOD_GENERATORS[by.lower()](min(d for _, d in canonicals), max(d for _, d in canonicals), is_bs)
+    )
+
+    return {
+        bucket.label: [item for item, ad_dt in canonicals if bucket.contains_date(ad_dt)]
+        for bucket in sorted(buckets, key=lambda b: b.start_ad)
+    }

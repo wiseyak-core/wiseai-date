@@ -7,7 +7,7 @@ from library.nepali_date import (
     month_name_from_devanagari, weekday_name_to_devanagari, weekday_name_from_devanagari,
     DateRange, ad_year_to_bs_range, bs_year_to_ad_range, bs_month_to_ad_range,
     ad_month_to_bs_range, bs_quarter_to_ad_range, ad_quarter_to_bs_range,
-    bs_half_to_ad_range, ad_half_to_bs_range, current_bs_year,
+    bs_half_to_ad_range, ad_half_to_bs_range, current_bs_year, group_dates,
     _BS_YEAR_DATA, _BS_MIN_YEAR, _BS_MAX_YEAR
 )
 
@@ -49,7 +49,6 @@ class TestCalendarDays(unittest.TestCase):
                 ad_end = bs_to_ad(year, 12, month_days[-1])
                 
                 yearly_ad_days = (ad_end - ad_start).days + 1
-                print(f"BS Year: {year} | BS Days: {yearly_bs_days:<3} | Corresponding AD Days: {yearly_ad_days:<3}")
                 
                 self.assertEqual(
                     yearly_bs_days, 
@@ -144,5 +143,150 @@ class TestMainDemos(unittest.TestCase):
         bs_month_rng = bs_month_to_ad_range('Shrawan', 2082)
         self.assertEqual(bs_month_rng.start_bs, (2082, 4, 1))
 
+class TestDateGrouping(unittest.TestCase):
+    def setUp(self):
+        # We fix the reference date to a specific point for deterministic tests
+        self.ref_date = datetime.date(2026, 4, 7) # Which is BS 2082-12-24
+        
+    def test_group_dates_by_ad_month(self):
+        # Mixed AD and BS inputs
+        dates = [
+            datetime.date(2026, 1, 15),
+            datetime.date(2026, 1, 20),
+            datetime.date(2026, 2, 10),
+            NepaliDateTime.from_bs(2082, 11, 25), # This falls in March 2026 usually
+        ]
+        res = group_dates(dates, by="month", calendar="AD")
+        
+        self.assertIn("AD January 2026", res)
+        self.assertEqual(len(res["AD January 2026"]), 2)
+        self.assertIn("AD February 2026", res)
+        self.assertEqual(len(res["AD February 2026"]), 1)
+
+    def test_group_dates_by_relative_phrases(self):
+        dates = [
+            datetime.date(2026, 4, 7), # today
+            datetime.date(2026, 4, 6), # yesterday
+            datetime.date(2026, 4, 5), # day before yesterday
+            datetime.date(2026, 3, 20), # last month roughly
+        ]
+        
+        phrases = ["today", "yesterday", "this_week"]
+        res = group_dates(dates, by=phrases, ref_date=self.ref_date)
+        
+        self.assertIn("Today", res)
+        self.assertEqual(res["Today"][0], datetime.date(2026, 4, 7))
+        self.assertIn("Yesterday", res)
+        self.assertEqual(res["Yesterday"][0], datetime.date(2026, 4, 6))
+
+    def test_group_dates_by_bs_month(self):
+        # Mixed AD and BS inputs for a BS Month bucket
+        dates = [
+            NepaliDateTime.from_bs(2082, 12, 15),
+            NepaliDateTime.from_bs(2082, 12, 20),
+            datetime.date(2026, 4, 1), # Falls in Chaitra 2082
+        ]
+        res = group_dates(dates, by="month", calendar="BS")
+
+        self.assertIn("BS Chaitra 2082", res)
+        self.assertEqual(len(res["BS Chaitra 2082"]), 3)
+
+class TestExtensiveRangesAndGrouping(unittest.TestCase):
+    def test_bs_year_to_ad_range(self):
+        rng = bs_year_to_ad_range(2082)
+        self.assertEqual(rng.start_ad, bs_to_ad(2082, 1, 1))
+        self.assertEqual(rng.end_ad, bs_to_ad(2082, 12, _BS_YEAR_DATA[2082][11]))
+
+    def test_ad_year_to_bs_range(self):
+        rng = ad_year_to_bs_range(2025)
+        self.assertEqual(rng.start_ad, datetime.date(2025, 1, 1))
+        self.assertEqual(rng.end_ad, datetime.date(2025, 12, 31))
+
+    def test_bs_month_to_ad_range(self):
+        rng = bs_month_to_ad_range(1, 2082)
+        self.assertEqual(rng.start_ad, bs_to_ad(2082, 1, 1))
+        self.assertEqual(rng.end_ad, bs_to_ad(2082, 1, _BS_YEAR_DATA[2082][0]))
+
+    def test_ad_month_to_bs_range(self):
+        rng = ad_month_to_bs_range(4, 2026)
+        self.assertEqual(rng.start_ad, datetime.date(2026, 4, 1))
+        self.assertEqual(rng.end_ad, datetime.date(2026, 4, 30))
+
+    def test_quarter_and_half_ranges(self):
+        ad_q1 = ad_quarter_to_bs_range(1, 2026)
+        self.assertEqual(ad_q1.start_ad, datetime.date(2026, 1, 1))
+        self.assertEqual(ad_q1.end_ad, datetime.date(2026, 3, 31))
+
+        bs_q1 = bs_quarter_to_ad_range(1, 2082)
+        self.assertEqual(bs_q1.start_bs, (2082, 1, 1))
+        self.assertEqual(bs_q1.end_bs, (2082, 3, _BS_YEAR_DATA[2082][2]))
+
+        ad_h1 = ad_half_to_bs_range(1, 2026)
+        self.assertEqual(ad_h1.start_ad, datetime.date(2026, 1, 1))
+        self.assertEqual(ad_h1.end_ad, datetime.date(2026, 6, 30))
+
+        bs_h2 = bs_half_to_ad_range(2, 2082)
+        self.assertEqual(bs_h2.start_bs, (2082, 7, 1))
+        self.assertEqual(bs_h2.end_bs, (2082, 12, _BS_YEAR_DATA[2082][11]))
+
+    def test_current_bs_year(self):
+        yr = current_bs_year()
+        self.assertIsInstance(yr, int)
+        self.assertGreaterEqual(yr, 2080)
+
+    def test_nepali_relative_phrases(self):
+        ref_date = datetime.date(2026, 4, 7) # BS 2082-12-24
+        dates = [
+            datetime.date(2026, 4, 7), # 'aaja'
+            datetime.date(2026, 4, 6), # 'hijo' / 'हिजो'
+            datetime.date(2026, 4, 8), # 'bholi'
+            datetime.date(2026, 4, 1), # previous week/this month 
+        ]
+        
+        phrases = ['aaja', 'हिजो', 'bholi', 'यो_हप्ता'] # Romanized + Devanagari test
+        res = group_dates(dates, by=phrases, ref_date=ref_date, calendar="BS")
+        
+        self.assertIn("Today", res)
+        self.assertEqual(res["Today"][0], datetime.date(2026, 4, 7))
+        self.assertIn("Yesterday", res)
+        self.assertEqual(res["Yesterday"][0], datetime.date(2026, 4, 6))
+        self.assertIn("Tomorrow", res)
+        self.assertEqual(res["Tomorrow"][0], datetime.date(2026, 4, 8))
+        self.assertIn("This Week", res)
+
+class TestDateGroupingJSONL(unittest.TestCase):
+    def test_grouping_from_jsonl(self):
+        import json
+        import os
+        jsonl_path = os.path.join(os.path.dirname(__file__), "test_cases.jsonl")
+        
+        with open(jsonl_path, "r", encoding="utf-8") as f:
+            cases = [json.loads(line) for line in f if line.strip()]
+        
+        # We fix the reference date so "today" and "yesterday" are predictable
+        ref_date = datetime.date(2026, 4, 7)
+
+        for case in cases:
+            # Run the algorithm directly on the raw strings (the engine parses them)
+            # or pre-convert AD iso dates if calendar is AD
+            calendar = case.get("calendar", "AD")
+            
+            if calendar == "AD":
+                dates = [datetime.date.fromisoformat(d) for d in case['input_dates']]
+            else:
+                # Pass strings directly so the core library's `_normalize_input` uses NepaliDateTime.parse
+                dates = case['input_dates']
+            
+            result = group_dates(dates, by=case['by'], calendar=calendar, ref_date=ref_date)
+
+            # Assert the keys exist
+            for key in case['expected_keys']:
+                self.assertIn(key, result)
+                
+            # Assert the counts match
+            for key, expected_count in case['expected_counts'].items():
+                self.assertEqual(len(result.get(key, [])), expected_count)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
+
