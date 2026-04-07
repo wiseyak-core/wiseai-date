@@ -112,3 +112,72 @@ stop  = NepaliDateTime.from_bs(2081, 9, 6)
 days = list(nepali_range(start, stop, granularity="day", step=2))
 print([d.bs_day for d in days]) # Output: [1, 3, 5]
 ```
+
+## Grouping and Analytics (`group_dates`)
+
+The library features a powerful bi-directional analytics engine capable of bucketing arrays of unstructured dates into standard business reporting periods (`month`, `quarter`, `half`, `year`) or dynamic relative windows (e.g., `"today"`, `"last_week"`, `"rolling_30"`, `"आज"`, `"गत_हप्ता"`, `"aaja"`).
+
+It supports native English, Romanized Nepali, and strict Devanagari string queries.
+
+### Examples of Data Grouping
+
+```python
+from library.nepali_date import group_dates, NepaliDateTime
+import datetime
+
+dates_to_bucket = [
+    datetime.date(2026, 1, 15),
+    NepaliDateTime.from_bs(2082, 10, 15),
+    datetime.date(2026, 4, 6)
+]
+
+# 1. Grouping by Relative Phrases (English, Romanized, or Devanagari)
+# Evaluates phrases mathematically from a reference date (defaults to today)
+res = group_dates(
+    dates_to_bucket, 
+    by=["today", "yesterday", "this_week"], 
+    calendar="AD"
+)
+# Output: {'This Week': [...], 'Yesterday': [...], 'Today': [...]}
+
+# Devanagari phrases are completely supported natively:
+res_nepali = group_dates(dates_to_bucket, by=["आज", "गत_हप्ता", "पछिल्लो_३०_दिन"], calendar="BS")
+
+# 2. Grouping by Financial Period (Quarters, Halves, Months)
+res_quarters = group_dates(dates_to_bucket, by="quarter", calendar="BS")
+# Output mappings dynamically label the financial quarters spanning specific months: 
+# {'BS Q4 2082: Magh–Chaitra': [...], 'BS Q1 2082: Baisakh–Ashadh': [...]}
+```
+
+### Supported Grouping Parameters
+- **Periods**: `"month"`, `"quarter"`, `"half"`, `"year"`, `"week"`, `"day"`
+- **Relative English**: `"today"`, `"yesterday"`, `"tomorrow"`, `"this_week"`, `"last_week"`, `"next_week"`, `"this_month"`, `"last_month"`, `"next_month"`, `"rolling_7"`, `"rolling_30"`
+- **Romanized Nepali**: `"aaja"`, `"hijo"`, `"bholi"`
+- **Devanagari (Nepali)**: `"आज"`, `"हिजो"`, `"भोलि"`, `"यो_हप्ता"`, `"गत_हप्ता"`, `"आगामी_हप्ता"`, `"यो_महिना"`, `"गत_महिना"`, `"आगामी_महिना"`, `"पछिल्लो_७_दिन"`, `"पछिल्लो_३०_दिन"`
+
+---
+
+## Testing
+
+The library relies on high-performance unit tests. The core logic has been rigorously tested against 130+ years of exact calendar offsets and extensive mathematical mappings.
+
+### Data-Driven Testing (`test_cases.jsonl`)
+To guarantee flawless parsing of complex Devanagari strings, Romanized formats, and grouping logic, the analytics engine is evaluated against a structured fixture file: [`test_cases.jsonl`](./test_cases.jsonl). 
+
+Using JSONL (JSON Lines) ensures that complex Unicode (Devanagari) strings do not suffer from encoding corruptions. Each line acts as a complete, independent test scenario passing arrays of dates and asserting specific bucket counts.
+
+A typical Devanagari test case in the file looks like this:
+```json
+{"input_dates": ["2082-12-22", "2082-12-23", "2082-12-24"], "by": ["आज", "हिजो", "भोलि"], "expected_keys": ["Yesterday", "Today", "Tomorrow"], "expected_counts": {"Yesterday": 1, "Today": 1, "Tomorrow": 1}, "calendar": "BS"}
+```
+
+To run the complete validation suite:
+
+```bash
+python test_calendar.py
+```
+
+Or via Pytest with standard output attached:
+```bash
+pytest -s test_calendar.py
+```

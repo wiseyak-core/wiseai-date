@@ -16,7 +16,8 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass, field
 from itertools import islice
-from typing import Generator, Iterator, List, Optional, Tuple
+import re
+from typing import Any, Generator, Iterator, List, Optional, Tuple, Callable, Dict, Iterable, Literal
 
 # ---------------------------------------------------------------------------
 # CONSTANTS — BS calendar data (1970 BS – 2100 BS)
@@ -196,6 +197,8 @@ _BS_WEEKDAY_NAMES: Tuple[str, ...] = (
     "Sanibar",      # 5 Saturday
     "Aaitabar",     # 6 Sunday
 )
+# Regular expression for parsing relative date strings like "3 days ago"
+_RELATIVE_PATTERN = re.compile(r'^(\d+)\s+(day|week)s?\s+(ago|back)$')
 
 # ---------------------------------------------------------------------------
 # DEVANAGARI CONSTANTS
@@ -913,7 +916,24 @@ class DateRange:
             parts.insert(0, f"  [{self.label}]")
         return "\n".join(parts)
 
+    # -- Range Algebra ------------------------------------------------------
 
+    def contains_date(self, date_obj: "Any") -> bool:
+        """Check if a date (datetime.date, datetime.datetime, or NepaliDateTime) falls in this range."""
+        value = getattr(date_obj, "dt", date_obj)
+        d = value.date() if hasattr(value, "date") else value
+        return self.start_ad <= d <= self.end_ad
+
+    def overlaps(self, other: "DateRange") -> bool:
+        """Check if this period overlaps with another DateRange."""
+        return max(self.start_ad, other.start_ad) <= min(self.end_ad, other.end_ad)
+
+    def intersection(self, other: "DateRange") -> "DateRange | None":
+        """Return the intersecting DateRange, or None if disjoint."""
+        start = max(self.start_ad, other.start_ad)
+        end = min(self.end_ad, other.end_ad)
+        return DateRange(start, end, label=f"({self.label} ∩ {other.label})") if start <= end else None
+    
 # -- Helper: current BS year / AD year ------------------------------------
 
 def current_bs_year() -> int:
@@ -1030,8 +1050,7 @@ def ad_month_to_bs_range(
     last_day  = _calendar.monthrange(ad_year, month_num)[1]
     start_ad  = datetime.date(ad_year, month_num, 1)
     end_ad    = datetime.date(ad_year, month_num, last_day)
-    import datetime as _dt
-    month_name = _dt.date(ad_year, month_num, 1).strftime("%B")
+    month_name = datetime.date(ad_year, month_num, 1).strftime("%B")
     return DateRange(start_ad, end_ad, label=f"AD {month_name} {ad_year}")
 
 
@@ -1112,9 +1131,8 @@ def ad_quarter_to_bs_range(
     m_start, m_end = _AD_QUARTER_MONTHS[quarter]
     start_ad = datetime.date(ad_year, m_start, 1)
     end_ad   = datetime.date(ad_year, m_end, _calendar.monthrange(ad_year, m_end)[1])
-    import datetime as _dt
-    s_name = _dt.date(ad_year, m_start, 1).strftime("%b")
-    e_name = _dt.date(ad_year, m_end,   1).strftime("%b")
+    s_name = datetime.date(ad_year, m_start, 1).strftime("%b")
+    e_name = datetime.date(ad_year, m_end,   1).strftime("%b")
     return DateRange(start_ad, end_ad, label=f"AD Q{quarter} {ad_year}: {s_name}–{e_name}")
 
 
@@ -1201,9 +1219,8 @@ def ad_half_to_bs_range(
     m_start, m_end = _AD_HALF_MONTHS[h]
     start_ad = datetime.date(ad_year, m_start, 1)
     end_ad   = datetime.date(ad_year, m_end, _calendar.monthrange(ad_year, m_end)[1])
-    import datetime as _dt
-    s_name = _dt.date(ad_year, m_start, 1).strftime("%b")
-    e_name = _dt.date(ad_year, m_end,   1).strftime("%b")
+    s_name = datetime.date(ad_year, m_start, 1).strftime("%b")
+    e_name = datetime.date(ad_year, m_end,   1).strftime("%b")
     return DateRange(start_ad, end_ad, label=f"AD H{h} {ad_year}: {s_name}–{e_name}")
 
 
@@ -1342,7 +1359,7 @@ class NepaliDateTime:
                 millisecond: int = 0) -> NepaliDateTime:
         """Build from AD date components."""
         dt = datetime.datetime(year, month, day,
-                               hour, minute, second, millisecond * 1000)
+                          hour, minute, second, millisecond * 1000)
         return cls(dt)
 
     @classmethod
@@ -2056,3 +2073,223 @@ def bs_month_calendar(year: int, month: int) -> List[List[Optional[int]]]:
 
     # chunk into weeks
     return [cells[i:i+7] for i in range(0, len(cells), 7)]
+
+# ---------------------------------------------------------------------------
+# PHRASE ALIASES
+# Maps English, Romanised Nepali, and Devanagari phrases to a single canonical key
+# ---------------------------------------------------------------------------
+_PHRASE_ALIASES: Dict[str, str] = {
+    # Points
+    "today": "today", "आज": "today", "aaja": "today",
+    "yesterday": "yesterday", "हिजो": "yesterday", "hijo": "yesterday",
+    "tomorrow": "tomorrow", "भोलि": "tomorrow", "bholi": "tomorrow",
+    # Weekly
+    "this_week": "this_week", "यो_हप्ता": "this_week", "current_week": "this_week",
+    "last_week": "last_week", "गत_हप्ता": "last_week", "gata_hapta": "last_week",
+    "next_week": "next_week", "आगामी_हप्ता": "next_week", "aagami_hapta": "next_week",
+    # Monthly
+    "this_month": "this_month", "यो_महिना": "this_month", "current_month": "this_month",
+    "last_month": "last_month", "गत_महिना": "last_month", "gata_mahina": "last_month",
+    "next_month": "next_month", "आगामी_महिना": "next_month", "aagami_mahina": "next_month",
+    # Yearly
+    "this_year": "this_year", "यो_वर्ष": "this_year", "yo_barsa": "this_year",
+    "last_year": "last_year", "गत_वर्ष": "last_year", "gata_barsa": "last_year",
+    "next_year": "next_year", "आगामी_वर्ष": "next_year", "aagami_barsa": "next_year",
+    # Rolling Windows
+    "rolling_7_days": "rolling_7", "past_7_days": "rolling_7", "पछिल्लो_७_दिन": "rolling_7",
+    "rolling_30_days": "rolling_30", "past_30_days": "rolling_30", "पछिल्लो_३०_दिन": "rolling_30",
+}
+
+# ---------------------------------------------------------------------------
+# PHRASE RESOLVERS REGISTRY
+# Maps canonical phrase -> lambda taking (ref_date, is_bs) explicitly returning DateRange
+# ---------------------------------------------------------------------------
+_DAY_DELTA = lambda n: datetime.timedelta(days=n)
+
+def _resolve_month_relative(r: datetime.date, bs: bool, offset: int = 0) -> DateRange:
+    if bs:
+        y, m = ad_to_bs(r)[:2]
+        target_m = (m - 1 + offset) % 12 + 1
+        target_y = y + (m - 1 + offset) // 12
+        return bs_month_to_ad_range(target_m, target_y)
+    
+    target_m = (r.month - 1 + offset) % 12 + 1
+    target_y = r.year + (r.month - 1 + offset) // 12
+    return ad_month_to_bs_range(target_m, target_y)
+
+def _resolve_year_relative(r: datetime.date, bs: bool, offset: int = 0) -> DateRange:
+    if bs:
+        return bs_year_to_ad_range(ad_to_bs(r)[0] + offset)
+    return ad_year_to_bs_range(r.year + offset)
+
+_PHRASE_RESOLVERS: Dict[str, Callable[[datetime.date, bool], DateRange]] = {
+    "today": lambda r, bs: DateRange(r, r, label="Today"),
+    "yesterday": lambda r, bs: DateRange(r - _DAY_DELTA(1), r - _DAY_DELTA(1), label="Yesterday"),
+    "tomorrow": lambda r, bs: DateRange(r + _DAY_DELTA(1), r + _DAY_DELTA(1), label="Tomorrow"),
+    
+    "this_week": lambda r, bs: DateRange(r - _DAY_DELTA(r.weekday()), r + _DAY_DELTA(6 - r.weekday()), label="This Week"),
+    "last_week": lambda r, bs: DateRange(r - _DAY_DELTA(r.weekday() + 7), r - _DAY_DELTA(r.weekday() + 1), label="Last Week"),
+    "next_week": lambda r, bs: DateRange(r + _DAY_DELTA(7 - r.weekday()), r + _DAY_DELTA(13 - r.weekday()), label="Next Week"),
+    
+    "rolling_7": lambda r, bs: DateRange(r - _DAY_DELTA(6), r, label="Last 7 Days"),
+    "rolling_30": lambda r, bs: DateRange(r - _DAY_DELTA(29), r, label="Last 30 Days"),
+
+    # Calendar Aware Resolvers (Evaluates AD->BS or AD->AD dynamically)
+    "this_month": lambda r, bs: _resolve_month_relative(r, bs, 0),
+    "last_month": lambda r, bs: _resolve_month_relative(r, bs, -1),
+    "next_month": lambda r, bs: _resolve_month_relative(r, bs, 1),
+    
+    "this_year": lambda r, bs: _resolve_year_relative(r, bs, 0),
+    "last_year": lambda r, bs: _resolve_year_relative(r, bs, -1),
+    "next_year": lambda r, bs: _resolve_year_relative(r, bs, 1),
+}
+
+# ---------------------------------------------------------------------------
+# ABSOLUTE PERIOD GENERATORS
+# Generate a sequence of contiguous buckets over an AD window
+# ---------------------------------------------------------------------------
+def _generate_months(min_d: datetime.date, max_d: datetime.date, is_bs: bool) -> List[DateRange]:
+    """Helper to calculate month intervals for both AD and BS calendars."""
+    start_y, start_m = ad_to_bs(min_d)[:2] if is_bs else (min_d.year, min_d.month)
+    end_y, end_m = ad_to_bs(max_d)[:2] if is_bs else (max_d.year, max_d.month)
+    total_months = (end_y - start_y) * 12 + (end_m - start_m) + 1
+    
+    return [
+        bs_month_to_ad_range((start_m - 1 + i) % 12 + 1, start_y + (start_m - 1 + i) // 12) if is_bs 
+        else ad_month_to_bs_range((start_m - 1 + i) % 12 + 1, start_y + (start_m - 1 + i) // 12)
+        for i in range(total_months)
+    ]
+
+def _generate_quarters(min_d: datetime.date, max_d: datetime.date, is_bs: bool) -> List[DateRange]:
+    """Helper to calculate quarter (3-month) intervals for both AD and BS calendars."""
+    start_y, start_m = ad_to_bs(min_d)[:2] if is_bs else (min_d.year, min_d.month)
+    end_y, end_m = ad_to_bs(max_d)[:2] if is_bs else (max_d.year, max_d.month)
+    start_q, end_q = (start_m - 1) // 3 + 1, (end_m - 1) // 3 + 1
+    total_quarters = (end_y - start_y) * 4 + (end_q - start_q) + 1
+    
+    return [
+        bs_quarter_to_ad_range((start_q - 1 + i) % 4 + 1, start_y + (start_q - 1 + i) // 4) if is_bs 
+        else ad_quarter_to_bs_range((start_q - 1 + i) % 4 + 1, start_y + (start_q - 1 + i) // 4)
+        for i in range(total_quarters)
+    ]
+
+def _generate_halves(min_d: datetime.date, max_d: datetime.date, is_bs: bool) -> List[DateRange]:
+    """Helper to calculate half-year (6-month) intervals for both AD and BS calendars."""
+    start_y, start_m = ad_to_bs(min_d)[:2] if is_bs else (min_d.year, min_d.month)
+    end_y, end_m = ad_to_bs(max_d)[:2] if is_bs else (max_d.year, max_d.month)
+    start_h, end_h = (start_m - 1) // 6 + 1, (end_m - 1) // 6 + 1
+    total_halves = (end_y - start_y) * 2 + (end_h - start_h) + 1
+    
+    return [
+        bs_half_to_ad_range((start_h - 1 + i) % 2 + 1, start_y + (start_h - 1 + i) // 2) if is_bs 
+        else ad_half_to_bs_range((start_h - 1 + i) % 2 + 1, start_y + (start_h - 1 + i) // 2)
+        for i in range(total_halves)
+    ]
+
+def _generate_weeks(min_d: datetime.date, max_d: datetime.date, bs: bool) -> List[DateRange]:
+    start_w = min_d - _DAY_DELTA(min_d.weekday())
+    total_weeks = (max_d - start_w).days // 7 + 1
+    return [
+        DateRange(start_w + _DAY_DELTA(i * 7), start_w + _DAY_DELTA(i * 7 + 6), label=f"Week of {start_w + _DAY_DELTA(i * 7)}")
+        for i in range(total_weeks)
+    ]
+
+_PERIOD_GENERATORS: Dict[str, Callable[[datetime.date, datetime.date, bool], Iterable[DateRange]]] = {
+    "day": lambda min_d, max_d, bs: [
+        DateRange(min_d + _DAY_DELTA(i), min_d + _DAY_DELTA(i), label=str(min_d + _DAY_DELTA(i))) 
+        for i in range((max_d - min_d).days + 1)
+    ],
+    "week": _generate_weeks,
+    "month": _generate_months,
+    "quarter": _generate_quarters,
+    "half": _generate_halves,
+    "year": lambda min_d, max_d, bs: [
+        bs_year_to_ad_range(y) if bs else ad_year_to_bs_range(y)
+        for y in range(
+            (ad_to_bs(min_d)[0] if bs else min_d.year),
+            (ad_to_bs(max_d)[0] if bs else max_d.year) + 1
+        )
+    ]
+}
+
+_DEVA_TRANS_MAP = str.maketrans(_DEVANAGARI_DIGIT_REVERSE) if '_DEVANAGARI_DIGIT_REVERSE' in globals() else None
+
+# Helper to process devanagari phrase conversion correctly
+def _to_ascii_phrase(phrase: str) -> str:
+    if not isinstance(phrase, str):
+        return phrase
+    # Convert devanagari to english mapping
+    for key, val in {
+        "आज": "today", "हिजो": "yesterday", "भोलि": "tomorrow", "पर्सि": "day_after_tomorrow",
+        "यो_हप्ता": "this_week", "गत_हप्ता": "last_week", "आगामी_हप्ता": "next_week",
+        "यो_महिना": "this_month", "गत_महिना": "last_month", "आगामी_महिना": "next_month",
+        "यो_वर्ष": "this_year", "गत_वर्ष": "last_year", "आगामी_वर्ष": "next_year",
+        "पछिल्लो_७_दिन": "rolling_7", "पछिल्लो_३०_दिन": "rolling_30"
+    }.items():
+        if phrase == key:
+            return val
+    return phrase.translate(_DEVA_TRANS_MAP).lower() if _DEVA_TRANS_MAP else phrase.lower()
+
+def _normalize_input(entry: Any, fallback_bs: bool = True) -> datetime.date:
+    """Safely extracts a naive datetime.date from various object sources."""
+    try:
+        if hasattr(entry, "dt"):
+            return entry.dt.date()
+        if hasattr(entry, "date") and callable(entry.date):
+            return entry.date()
+        if isinstance(entry, datetime.date):
+            return entry
+            
+        str_val = str(entry).translate(_DEVA_TRANS_MAP) if _DEVA_TRANS_MAP else str(entry)
+        if fallback_bs:
+            return NepaliDateTime.parse(str_val).dt.date()
+        return datetime.datetime.fromisoformat(str_val).date()
+    except Exception as e:
+        raise ValueError(f"Could not normalize input to canonical AD date: {entry}. Reason: {e}")
+
+def _resolve_relative(phrase: str, ref_dt: datetime.date, is_bs: bool) -> DateRange:
+    """Resolve a relative string using the registry, or via regular expression offset fallback."""
+    ascii_phr = _to_ascii_phrase(phrase.strip())
+    key = _PHRASE_ALIASES.get(ascii_phr.replace(" ", "_"), ascii_phr)
+
+    if key in _PHRASE_RESOLVERS:
+        return _PHRASE_RESOLVERS[key](ref_dt, is_bs)
+    
+    match = _RELATIVE_PATTERN.match(key)
+    if not match:
+        raise ValueError(f"Unrecognised relative phrase: {phrase}")
+    
+    val, unit = int(match.group(1)), match.group(2)
+    start_d = ref_dt - _DAY_DELTA(val * (7 if unit == "week" else 1))
+    
+    if unit == "week":
+        return DateRange(start_d - _DAY_DELTA(start_d.weekday()), start_d + _DAY_DELTA(6 - start_d.weekday()), label=phrase)
+    return DateRange(start_d, start_d, label=phrase)
+
+def group_dates(
+    dates: List[Any],
+    by: str | List[str],
+    calendar: Literal["BS", "AD"] = "BS",
+    ref_date: datetime.date | None = None
+) -> Dict[str, List[Any]]:
+    """
+    Groups a mixed list of AD/BS objects, strings & numerals into bucketed periods.
+    """
+    ref_dt = ref_date or datetime.date.today()
+    is_bs = calendar.upper() == "BS"
+    
+    # 1. Normalize all inputs paired with original objects
+    canonicals = [(orig, _normalize_input(orig, is_bs)) for orig in dates]
+    if not canonicals:
+        return {}
+
+    # 2. Resolve buckets (either generated dynamically or explicitly requested)
+    buckets: List[DateRange] = (
+        [_resolve_relative(phrase, ref_dt, is_bs) for phrase in by] if isinstance(by, list) else
+        _PERIOD_GENERATORS[by.lower()](min(d for _, d in canonicals), max(d for _, d in canonicals), is_bs)
+    )
+
+    return {
+        bucket.label: [item for item, ad_dt in canonicals if bucket.contains_date(ad_dt)]
+        for bucket in sorted(buckets, key=lambda b: b.start_ad)
+    }

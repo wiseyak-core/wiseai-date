@@ -5,3 +5,9 @@ description = "Date utility for Nepali context."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.0",
+    "pytest-xdist>=3.0.0"
+]
