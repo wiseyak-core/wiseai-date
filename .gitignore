@@ -209,6 +209,8 @@ __marimo__/
 # Virtual environments
 .venv
 
+uv.lock
+
 # IDEs
 .idea/
 .vscode/
