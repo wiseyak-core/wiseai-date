@@ -283,15 +283,15 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     "vaisakh": 1, "vaishakh": 1, "beshakh": 1,
     # spelling-mistake variants (roman)
     "baisak": 1, "baisackh": 1, "baisahk": 1, "baishak": 1,
-    "baisakhh": 1, "baishakh": 1, "vaisahk": 1, "vaisakha": 1,
-    "beshak": 1, "besakh": 1, "beshakha": 1,
+    "baisakhh": 1, "vaisahk": 1, "vaisakha": 1,
+    "besakh": 1, "beshakha": 1,
     # Devanagari canonical + variants
     "बैशाख": 1, "बैसाख": 1, "बिशाख": 1, "वैशाख": 1,
 
     # ── Month 2 — Jestha ───────────────────────────────────────────────────
     # canonical + common alternatives
     "jestha": 2, "jeth": 2, "jaistha": 2, "jaishtha": 2,
-    "jyestha": 2, "jyaistha": 2,
+    "jyeshtha": 2, "jyaistha": 2,
     # spelling-mistake variants (roman)
     "jesta": 2, "jesth": 2, "jetha": 2, "jeshtha": 2,
     "jaitha": 2, "jeistha": 2, "jesatha": 2, "jjestha": 2,
@@ -301,11 +301,11 @@ _BS_MONTH_ALIASES: dict[str, int] = {
 
     # ── Month 3 — Ashadh ───────────────────────────────────────────────────
     # canonical + common alternatives
-    "ashadh": 3, "asar": 3, "ashad": 3, "ashar": 3, "asadh": 3,
-    "aasar": 3, "aasadh": 3, "ashadha": 3,
+    "ashadh": 3, "asaar": 3, "ashad": 3, "ashar": 3, "asadh": 3,
+    "aasaar": 3, "aasadh": 3, "ashadha": 3,
     # spelling-mistake variants (roman)
-    "asad": 3, "asadha": 3, "ashadha": 3, "aashar": 3,
-    "ashad": 3, "ashada": 3, "aaashar": 3, "assar": 3,
+    "asad": 3, "asadha": 3, "aashar": 3,
+    "ashada": 3, "aaashar": 3, "assar": 3,
     "aasad": 3, "ashardh": 3,
     # Devanagari canonical + variants
     "असार": 3, "आसार": 3, "असाढ": 3, "आषाढ": 3,
@@ -313,11 +313,11 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     # ── Month 4 — Shrawan ──────────────────────────────────────────────────
     # canonical + common alternatives
     "shrawan": 4, "sawan": 4, "saun": 4, "shrawn": 4,
-    "shraawan": 4, "shravan": 4, "srabon": 4,
+    "shraawan": 4, "shravan": 4, "srabon": 4, "shawan":4, "sraban": 4,
     # spelling-mistake variants (roman)
     "shrawaan": 4, "sraawan": 4, "shreawan": 4, "shrawon": 4,
     "shrabn": 4, "sharwan": 4, "sharawn": 4, "shrwan": 4,
-    "shaun": 4, "saawn": 4, "sraavn": 4,
+    "shaun": 4, "saawn": 4, "sraavn": 4, "shravana": 4,
     # Devanagari canonical + variants
     "साउन": 4, "सावन": 4, "श्रावण": 4, "शावन": 4,
 
@@ -326,29 +326,28 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     "bhadra": 5, "bhadau": 5, "bhadon": 5,
     "bhaadra": 5, "bhadro": 5,
     # spelling-mistake variants (roman)
-    "bhaadra": 5, "bhadara": 5, "bhadara": 5, "bhadaa": 5,
+    "bhadara": 5, "bhadaa": 5,
     "bhadou": 5, "bhadaau": 5, "bhadoo": 5, "bhadaw": 5,
-    "bhadraa": 5, "bhardo": 5, "bhadar": 5,
+    "bhadraa": 5, "bhardo": 5, "bhadar": 5, "bhadrapada" : 5,
     # Devanagari canonical + variants
-    "भदौ": 5, "भाद्र": 5, "भदो": 5,
+    "भदौ": 5, "भाद्र": 5, "भदो": 5, "भाद्रपद": 5,
 
     # ── Month 6 — Ashwin ───────────────────────────────────────────────────
     # canonical + common alternatives
     "ashwin": 6, "asoj": 6, "aswin": 6, "ashvin": 6,
     "aashwin": 6, "aswoj": 6, "ashwoj": 6,
     # spelling-mistake variants (roman)
-    "ashwin": 6, "aashwin": 6, "ashween": 6, "ashvin": 6,
-    "ashveen": 6, "aswin": 6, "aswinn": 6, "asshwin": 6,
-    "assoj": 6, "asoj": 6, "azoj": 6, "asswin": 6,
+    "ashween": 6, "ashveen": 6, "aswinn": 6, "asshwin": 6,
+    "assoj": 6, "azoj": 6, "asswin": 6, "ashvina": 6,
     # Devanagari canonical + variants
     "असोज": 6, "आसोज": 6, "अश्विन": 6, "आश्विन": 6,
 
     # ── Month 7 — Kartik ───────────────────────────────────────────────────
     # canonical + common alternatives
     "kartik": 7, "kartika": 7, "katik": 7, "karthik": 7,
-    "kartick": 7,
+    "kartick": 7, 
     # spelling-mistake variants (roman)
-    "kartick": 7, "karttik": 7, "kartikk": 7, "kaartik": 7,
+    "karttik": 7, "kartikk": 7, "kaartik": 7,
     "karteak": 7, "kartikha": 7, "karthika": 7, "katika": 7,
     "kattik": 7, "kartic": 7, "karteek": 7,
     # Devanagari canonical + variants
@@ -357,7 +356,7 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     # ── Month 8 — Mangsir ──────────────────────────────────────────────────
     # canonical + common alternatives
     "mangsir": 8, "margashir": 8, "mansir": 8, "mangshir": 8,
-    "marga": 8, "margashirsha": 8,
+    "margashirsha": 8,
     # spelling-mistake variants (roman)
     "mangseer": 8, "manshir": 8, "mangsheer": 8, "mangasir": 8,
     "mangsirr": 8, "mangsire": 8, "manngsir": 8, "mangsiir": 8,
@@ -370,9 +369,9 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     "poush": 9, "push": 9, "paush": 9, "pus": 9, "poos": 9,
     "pаush": 9,
     # spelling-mistake variants (roman)
-    "pouush": 9, "poosh": 9, "poush": 9, "phouush": 9,
-    "poush": 9, "posh": 9, "poush": 9, "pus": 9,
-    "paush": 9, "paaus": 9, "pauush": 9,
+    "pouush": 9, "poosh": 9, "phouush": 9,
+    "posh": 9,"paaus": 9, "pauush": 9, 
+    "pausha": 9, "pusha": 9,
     # Devanagari canonical + variants
     "पुष": 9, "पुस": 9, "पौष": 9, "पूस": 9,
 
@@ -381,9 +380,9 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     "magh": 10, "maagh": 10, "maag": 10,
     # spelling-mistake variants (roman)
     "mag": 10, "magg": 10, "maagha": 10, "magha": 10,
-    "maakh": 10, "maaghh": 10, "magh": 10,
+    "maakh": 10, "maaghh": 10,
     # Devanagari canonical + variants
-    "माघ": 10, "माघ": 10, 
+    "माघ": 10,
     
     # ── Month 11 — Falgun ──────────────────────────────────────────────────
     # canonical + common alternatives
@@ -391,7 +390,7 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     "phalgun": 11, "phaagun": 11,
     # spelling-mistake variants (roman)
     "falgan": 11, "phaalgun": 11, "falgunn": 11, "falgon": 11,
-    "falgen": 11, "phaagoon": 11, "phaaganun": 11, "falugn": 11,
+    "falgen": 11, "phaagoon": 11, "falugn": 11,
     "phalugna": 11, "phaalguna": 11,
     # Devanagari canonical + variants
     "फाल्गुण": 11, "फागुन": 11, "फाल्गुन": 11, "फागून": 11,
@@ -400,8 +399,8 @@ _BS_MONTH_ALIASES: dict[str, int] = {
     # canonical + common alternatives
     "chaitra": 12, "chait": 12, "chaitta": 12, "chaita": 12,
     # spelling-mistake variants (roman)
-    "chaiter": 12, "chaitraa": 12, "chaitrra": 12, "chatra": 12,
-    "chaitra": 12, "chaeta": 12, "chyaitra": 12, "chaaitr": 12,
+    "chaiter": 12, "chaitraa": 12, "chaitrra": 12,
+    "chaeta": 12, "chyaitra": 12, "chaaitr": 12,
     "chaetra": 12, "chaeit": 12,
     # Devanagari canonical + variants
     "चैत्र": 12, "चैत": 12, "चैत्रा": 12, "चैत्": 12,
@@ -525,10 +524,12 @@ def weekday_name_from_devanagari(deva_name: str) -> str:
 _AD_MONTH_ALIASES: dict[str, int] = {
     # January — canonical + spelling mistakes
     "january": 1,  "jan": 1,  "1": 1,
-    "januray": 1, "januery": 1, "janaury": 1, "janury": 1, "janury": 1,
+    "januray": 1, "januery": 1, "janaury": 1, 
+    "janury": 1, "janwari": 1, "janwary": 1,
     # February — canonical + spelling mistakes
     "february": 2, "feb": 2,  "2": 2,
-    "febuary": 2,  "feburary": 2, "februray": 2, "febrary": 2,
+    "febuary": 2,  "feburary": 2, "februray": 2, 
+    "febrary": 2, "febrari": 2,
     # March — canonical + spelling mistakes
     "march": 3,    "mar": 3,  "3": 3,
     "marck": 3,   "mach": 3,  "marsch": 3,
@@ -536,17 +537,17 @@ _AD_MONTH_ALIASES: dict[str, int] = {
     "april": 4,    "apr": 4,  "4": 4,
     "apirl": 4,   "aprl": 4,  "aprill": 4, "apryl": 4,
     # May — canonical + spelling mistakes
-    "may": 5,                 "5": 5,
-    "maay": 5,    "maye": 5,
+    "may": 5,   "5": 5,
+    "maay": 5,    "maye": 5, "mey": 5,
     # June — canonical + spelling mistakes
     "june": 6,     "jun": 6,  "6": 6,
-    "juune": 6,   "juen": 6,  "june": 6,
+    "juune": 6,   "juen": 6,  "joon": 6,
     # July — canonical + spelling mistakes
     "july": 7,     "jul": 7,  "7": 7,
-    "juuly": 7,   "jully": 7, "julye": 7,
+    "juuly": 7,   "jully": 7, "julye": 7, "julai": 7,
     # August — canonical + spelling mistakes
-    "august": 8,   "aug": 8,  "8": 8,
-    "augist": 8,  "agust": 8, "augest": 8, "augustt": 8,
+    "august": 8,   "aug": 8,  "8": 8, "agast" : 8, "agust": 8,
+    "augist": 8,  "augest": 8, "augustt": 8,
     # September — canonical + spelling mistakes
     "september": 9, "sep": 9, "sept": 9, "9": 9,
     "setember": 9, "septmber": 9, "septembar": 9, "septembe": 9,
@@ -606,11 +607,11 @@ _WEEKDAY_ALIASES: dict[str, int] = {
     "monday": 0,    "tuesday": 1,  "wednesday": 2, "thursday": 3,
     "friday": 4,    "saturday": 5, "sunday": 6,
     # English full-name spelling mistakes
-    "mondey": 0,  "moonday": 0,  "moday": 0,   "munday": 0,
-    "tuseday": 1, "tusday": 1,   "teusday": 1, "thuseday": 1,
+    "mondey": 0,  "moonday": 0,  "moday": 0,   "munday": 0, "manday": 0,
+    "tuseday": 1, "tusday": 1,   "teusday": 1, "thuseday": 1, 
     "wendsday": 2, "wensday": 2, "wednseday": 2, "wednsday": 2,
-    "thurdsay": 3, "thursay": 3, "thurday": 3, "firday": 4,
-    "fryday": 4,  "friay": 4,
+    "thurdsay": 3, "thursay": 3, "thurday": 3, "thirsday": 3, "thusday": 3,
+    "firday": 4,  "fryday": 4,  "friay": 4,
     "saterday": 5, "saturdy": 5, "satarday": 5,
     "sunady": 6,  "sonday": 6,  "sunnday": 6,
     # ── English 3-letter abbreviations ─────────────────────────────────────
@@ -621,27 +622,27 @@ _WEEKDAY_ALIASES: dict[str, int] = {
     "mo": 0, "tu": 1, "we": 2, "th": 3, "fr": 4, "sa": 5, "su": 6,
     # ── Nepali romanised names (canonical forms) ────────────────────────────
     "sombar": 0,    "mangalbar": 1, "budhabar": 2,
-    "bihibar": 3,   "sukrabar": 4,  "sanibar": 5,  "aaitabar": 6,
+    "bihibar": 3,   "sukrabar": 4,  "sanibar": 5,  "aaitabar": 6, "aitabaar": 6, "aaitabaar": 6,
     # ── Common Nepali romanised variants ───────────────────────────────────
-    "somabar": 0,   "soma": 0,
+    "somabar": 0,   "soma": 0, "som": 0,
     "mangal": 1,    "mangala": 1,
-    "budha": 2,
-    "bihivar": 3,   "brihaspatibar": 3,
+    "budha": 2,   "budh": 2, "budhvar": 2, 
+    "bihivar": 3,   "brihaspatibar": 3, "gurubar": 3, "guruvar": 3, 
     "sukra": 4,     "shukra": 4,    "shukrabar": 4,
     "shani": 5,     "shanibar": 5,
-    "aaita": 6,     "aita": 6,      "aitabar": 6,  "rabibar": 6,
+    "aaita": 6,     "aita": 6,      "aitabar": 6,  "rabibar": 6, "ravivar": 6, "ravi": 6, "itvar": 6,
     # ── Nepali romanised spelling mistakes ─────────────────────────────────
     # Sombar / Somabar (Monday)
-    "sombaar": 0,  "sombar": 0,   "sombara": 0,  "sombarr": 0,
+    "sombara": 0,  "sombarr": 0,
     "somabaar": 0, "somabarr": 0, "somabara": 0,
     # Mangalbar (Tuesday)
     "mangalbaar": 1, "mangalbarr": 1, "mangalbara": 1,
-    "mangalbaar": 1, "mangelbar": 1,  "mangalvaar": 1,
+    "mangelbar": 1,  "mangalvaar": 1,
     # Budhabar (Wednesday)
     "budhabaar": 2, "budhabarr": 2, "budhab": 2,
     "budhaabar": 2, "budhavar": 2,  "budaabar": 2,
     # Bihibar (Thursday)
-    "bihikar": 3,  "bihibarr": 3, "bihibaar": 3,
+    "bihibarr": 3, "bihibaar": 3,
     "bihaabar": 3, "bihavar": 3,  "brihaspati": 3,
     # Sukrabar (Friday)
     "sukravar": 4, "sukrabaar": 4, "sukrabarr": 4,
@@ -658,19 +659,19 @@ _WEEKDAY_ALIASES: dict[str, int] = {
     "बिहीबार": 3,  "शुक्रबार": 4, "शनिबार": 5,   "आइतबार": 6,
     # ── Devanagari spelling-mistake / alternate forms ───────────────────────
     # Monday variants
-    "सोमवार": 0,  "सोमबार": 0,  "सोम": 0,
+    "सोमवार": 0, "सोम": 0,
     # Tuesday variants
-    "मंगलवार": 1, "मंगल": 1,    "मङ्गलबार": 1,
+    "मंगलवार": 1, "मंगल": 1,    "मङ्गलबार": 1, "मङ्गल": 1, 
     # Wednesday variants
     "बुधवार": 2,  "बुध": 2,     "बुद्धबार": 2,
     # Thursday variants
-    "बिहिबार": 3, "बिहीवार": 3, "बृहस्पतिबार": 3,
+    "बिहिबार": 3, "बिहीवार": 3, "बृहस्पतिबार": 3, "गुरुवार": 3, "गुरुबार": 3, "बिहि":3, "बिही":3,
     # Friday variants
-    "शुक्रवार": 4, "शुक्र": 4,  "शुक्राबार": 4,
+    "शुक्रवार": 4, "शुक्र": 4,  "शुक्राबार": 4, "सुक्रबार": 4, 
     # Saturday variants
-    "शनिवार": 5,  "शनि": 5,    "शनीबार": 5,
+    "शनिवार": 5,  "शनि": 5, "शनीबार": 5,"सनिबार": 5, "शानिबार": 5,
     # Sunday variants
-    "आइतवार": 6,  "आइत": 6,    "रविबार": 6,    "रबिबार": 6,
+    "आइतवार": 6,  "आइत": 6,    "रविबार": 6,    "रबिबार": 6, "इतवार": 6, "इतबार": 6, "रबिवार": 6,
 }
 
 

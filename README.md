@@ -18,7 +18,7 @@ The `NepaliDateTime` class is a wrapper that internally stores a standard Python
 **1. Creating a `NepaliDateTime` Object**
 
 ```python
-from lib.nepali_date import NepaliDateTime
+from library.nepali_date import NepaliDateTime
 
 # Current date and time
 now = NepaliDateTime.now()
@@ -84,7 +84,7 @@ The library provides powerful iterators to walk backward or forward through time
 `make_iterator` provides an easy-to-use iterable across a specific granularity.
 
 ```python
-from lib.nepali_date import make_iterator, NepaliDateTime
+from library.nepali_date import make_iterator, NepaliDateTime
 
 start_date = NepaliDateTime.from_bs(2081, 1, 1)
 
@@ -103,7 +103,7 @@ next_5_months = month_it.take(5)
 For fine-grained control, specifically when providing a strict stop date or custom step size, use the lower-level generator `nepali_range`.
 
 ```python
-from lib.nepali_date import nepali_range, NepaliDateTime
+from library.nepali_date import nepali_range, NepaliDateTime
 
 start = NepaliDateTime.from_bs(2081, 9, 1)
 stop  = NepaliDateTime.from_bs(2081, 9, 6)
