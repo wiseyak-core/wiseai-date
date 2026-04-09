@@ -152,8 +152,8 @@ def _demo() -> None:
     # 14. NepaliDateTime Devanagari properties
     print("\n[14] NepaliDateTime — Devanagari properties")
     ndt2 = NepaliDateTime.from_bs(2081, 4, 15, 10, 30, 45, 500)
-    print(f"  Latin  : {ndt2.format_bs(deva=False)}")
-    print(f"  Deva   : {ndt2.format_bs(deva=True)}")
+    print(f"  Latin  : {ndt2.format_bs(devanagari=False)}")
+    print(f"  Deva   : {ndt2.format_bs(devanagari=True)}")
     print(f"  Year   : {ndt2.bs_year}  →  {ndt2.bs_year_devanagari}")
     print(f"  Month# : {ndt2.bs_month:02d}  →  {ndt2.bs_month_devanagari}")
     print(f"  Day#   : {ndt2.bs_day:02d}  →  {ndt2.bs_day_devanagari}")
