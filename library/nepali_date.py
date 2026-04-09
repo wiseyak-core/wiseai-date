@@ -688,11 +688,11 @@ def _total_bs_days_from_anchor(year: int, month: int, day: int) -> int:
         )
     # days from anchor-year start to target year start
     year_days = sum(
-        sum(_BS_YEAR_DATA[yy]) for yy in range(_ANCHOR_BS[0], year)
+        sum(_BS_YEAR_DATA[year_idx]) for year_idx in range(_ANCHOR_BS[0], year)
     )
     # days within target year up to target month
     month_days = sum(
-        _BS_YEAR_DATA[year][mm] for mm in range(month - 1)
+        _BS_YEAR_DATA[year][month_idx] for month_idx in range(month - 1)
         # months are 0-indexed in tuple
     )
     return year_days + month_days + (day - 1)
@@ -1537,7 +1537,7 @@ class NepaliDateTime:
     # SECTION 2 — Field Accessors  (mirroring Java LocalDateTime.getXxx())
     # =========================================================================
 
-    def getLong(self, field: str) -> int:
+    def get_long(self, field: str) -> int:
         """Return the value of the named field as a long integer.
 
         Supported field names (case-insensitive):
@@ -1546,14 +1546,14 @@ class NepaliDateTime:
         """
         f = field.lower()
         mapping = {
-            FIELD_YEAR: self.getYear,
-            FIELD_MONTH: self.getMonthValue,
-            FIELD_DAY: self.getDayOfMonth,
-            FIELD_DAY_OF_YEAR: self.getDayOfYear,
-            FIELD_DAY_OF_WEEK: self.getDayOfWeek,
-            FIELD_HOUR: self.getHour,
-            FIELD_MINUTE: self.getMinute,
-            FIELD_SECOND: self.getSecond,
+            FIELD_YEAR: self.get_year,
+            FIELD_MONTH: self.get_month_value,
+            FIELD_DAY: self.get_day_of_month,
+            FIELD_DAY_OF_YEAR: self.get_day_of_year,
+            FIELD_DAY_OF_WEEK: self.get_day_of_week,
+            FIELD_HOUR: self.get_hour,
+            FIELD_MINUTE: self.get_minute,
+            FIELD_SECOND: self.get_second,
             FIELD_MILLISECOND: lambda: self.millisecond,
         }
         if f not in mapping:
@@ -1563,23 +1563,23 @@ class NepaliDateTime:
             )
         return mapping[f]()
 
-    def getYear(self) -> int:
+    def get_year(self) -> int:
         """Return the BS year, e.g. 2081."""
         return self.bs_year
 
-    def getMonth(self) -> str:
+    def get_month(self) -> str:
         """Return the BS month name (Latin), e.g. 'Shrawan'."""
         return self.bs_month_name
 
-    def getMonthValue(self) -> int:
+    def get_month_value(self) -> int:
         """Return the BS month as an integer 1-12."""
         return self.bs_month
 
-    def getDayOfMonth(self) -> int:
+    def get_day_of_month(self) -> int:
         """Return the BS day-of-month (1 – 32)."""
         return self.bs_day
 
-    def getDayOfYear(self) -> int:
+    def get_day_of_year(self) -> int:
         """Return the BS day-of-year (1 – 366).
 
         Computed by summing completed BS months of the current year plus the
@@ -1589,19 +1589,19 @@ class NepaliDateTime:
         completed = sum(_BS_YEAR_DATA[year][:month - 1])
         return completed + day
 
-    def getDayOfWeek(self) -> int:
+    def get_day_of_week(self) -> int:
         """Return the Python weekday integer (Monday=0 … Sunday=6)."""
         return self.dt.weekday()
 
-    def getHour(self) -> int:
+    def get_hour(self) -> int:
         """Return the hour-of-day (0-23)."""
         return self.hour
 
-    def getMinute(self) -> int:
+    def get_minute(self) -> int:
         """Return the minute-of-hour (0-59)."""
         return self.minute
 
-    def getSecond(self) -> int:
+    def get_second(self) -> int:
         """Return the second-of-minute (0-59)."""
         return self.second
 
@@ -1609,21 +1609,21 @@ class NepaliDateTime:
     # SECTION 3 — Date / Time Extraction  (toLocalDate / toLocalTime)
     # =========================================================================
 
-    def toLocalDate(self) -> datetime.date:
+    def to_local_date(self) -> datetime.date:
         """Extract the underlying AD :class:`datetime.date` component.
 
         Mirrors Java's ``LocalDateTime.toLocalDate()``.
         """
         return self.dt.date()
 
-    def toLocalTime(self) -> datetime.time:
+    def to_local_time(self) -> datetime.time:
         """Extract the underlying :class:`datetime.time` component (H:M:S.μs).
 
         Mirrors Java's ``LocalDateTime.toLocalTime()``.
         """
         return self.dt.time()
 
-    def toBSDate(self) -> Tuple[int, int, int]:
+    def to_bs_date(self) -> Tuple[int, int, int]:
         """Return the BS date triple ``(year, month, day)``."""
         return self.bs_date
 
@@ -1658,25 +1658,25 @@ class NepaliDateTime:
         day = min(day, _days_in_bs_month(year, month))
         return NepaliDateTime.from_bs(year, month, day, h, mi, s, ms)
 
-    def withYear(self, year: int) -> NepaliDateTime:
+    def with_year(self, year: int) -> NepaliDateTime:
         """Return a copy with the BS year replaced.
 
         Day is clamped if it exceeds the number of days in the target month.
         """
         return self.with_(year=year)
 
-    def withMonth(self, month: "int | str") -> NepaliDateTime:
+    def with_month(self, month: "int | str") -> NepaliDateTime:
         """Return a copy with the BS month replaced (int or name).
 
         Day is clamped to the new month's length if necessary.
         """
         return self.with_(month=month)
 
-    def withDayOfMonth(self, day: int) -> NepaliDateTime:
+    def with_day_of_month(self, day: int) -> NepaliDateTime:
         """Return a copy with the BS day-of-month replaced."""
         return self.with_(day=day)
 
-    def withDayOfYear(self, day_of_year: int) -> NepaliDateTime:
+    def with_day_of_year(self, day_of_year: int) -> NepaliDateTime:
         """Return a copy with the BS day-of-year replaced.
 
         Walks the BS month table for the current BS year to find the
@@ -1698,15 +1698,15 @@ class NepaliDateTime:
             f"day_of_year={day_of_year} exceeds total days in BS year {year}."
         )
 
-    def withHour(self, hour: int) -> NepaliDateTime:
+    def with_hour(self, hour: int) -> NepaliDateTime:
         """Return a copy with the hour replaced (0-23)."""
         return self.with_(hour=hour)
 
-    def withMinute(self, minute: int) -> NepaliDateTime:
+    def with_minute(self, minute: int) -> NepaliDateTime:
         """Return a copy with the minute replaced (0-59)."""
         return self.with_(minute=minute)
 
-    def withSecond(self, second: int) -> NepaliDateTime:
+    def with_second(self, second: int) -> NepaliDateTime:
         """Return a copy with the second replaced (0-59)."""
         return self.with_(second=second)
 
@@ -1729,9 +1729,9 @@ class NepaliDateTime:
         """
         result = self
         if FIELD_YEARS in kwargs:
-            result = result.plusYears(kwargs.pop(FIELD_YEARS))
+            result = result.plus_years(kwargs.pop(FIELD_YEARS))
         if FIELD_MONTHS in kwargs:
-            result = result.plusMonths(kwargs.pop(FIELD_MONTHS))
+            result = result.plus_months(kwargs.pop(FIELD_MONTHS))
         if kwargs:
             result = NepaliDateTime(result.dt + datetime.timedelta(**kwargs))
         return result
@@ -1750,7 +1750,7 @@ class NepaliDateTime:
 
     # -- Year-level -----------------------------------------------------------
 
-    def plusYears(self, years: int) -> NepaliDateTime:
+    def plus_years(self, years: int) -> NepaliDateTime:
         """Return a copy with the given number of BS years added.
 
         The day is clamped to the new month's length when it would overflow
@@ -1767,13 +1767,13 @@ class NepaliDateTime:
             self.hour, self.minute, self.second, self.millisecond
         )
 
-    def minusYears(self, years: int) -> NepaliDateTime:
+    def minus_years(self, years: int) -> NepaliDateTime:
         """Return a copy with the given number of BS years subtracted."""
-        return self.plusYears(-years)
+        return self.plus_years(-years)
 
     # -- Month-level ----------------------------------------------------------
 
-    def plusMonths(self, months: int) -> NepaliDateTime:
+    def plus_months(self, months: int) -> NepaliDateTime:
         """Return a copy with the given number of BS months added.
 
         Rolls over year boundaries; day is clamped to the target month's
@@ -1792,59 +1792,59 @@ class NepaliDateTime:
             self.hour, self.minute, self.second, self.millisecond
         )
 
-    def minusMonths(self, months: int) -> NepaliDateTime:
+    def minus_months(self, months: int) -> NepaliDateTime:
         """Return a copy with the given number of BS months subtracted."""
-        return self.plusMonths(-months)
+        return self.plus_months(-months)
 
     # -- Week-level -----------------------------------------------------------
 
-    def plusWeeks(self, weeks: int) -> NepaliDateTime:
+    def plus_weeks(self, weeks: int) -> NepaliDateTime:
         """Return a copy with the given number of weeks added (7 days each)."""
         return NepaliDateTime(self.dt + datetime.timedelta(weeks=weeks))
 
-    def minusWeeks(self, weeks: int) -> NepaliDateTime:
+    def minus_weeks(self, weeks: int) -> NepaliDateTime:
         """Return a copy with the given number of weeks subtracted."""
-        return self.plusWeeks(-weeks)
+        return self.plus_weeks(-weeks)
 
     # -- Day-level ------------------------------------------------------------
 
-    def plusDays(self, days: int) -> NepaliDateTime:
+    def plus_days(self, days: int) -> NepaliDateTime:
         """Return a copy with the given number of days added."""
         return NepaliDateTime(self.dt + datetime.timedelta(days=days))
 
-    def minusDays(self, days: int) -> NepaliDateTime:
+    def minus_days(self, days: int) -> NepaliDateTime:
         """Return a copy with the given number of days subtracted."""
-        return self.plusDays(-days)
+        return self.plus_days(-days)
 
     # -- Hour-level -----------------------------------------------------------
 
-    def plusHours(self, hours: int) -> NepaliDateTime:
+    def plus_hours(self, hours: int) -> NepaliDateTime:
         """Return a copy with the given number of hours added."""
         return NepaliDateTime(self.dt + datetime.timedelta(hours=hours))
 
-    def minusHours(self, hours: int) -> NepaliDateTime:
+    def minus_hours(self, hours: int) -> NepaliDateTime:
         """Return a copy with the given number of hours subtracted."""
-        return self.plusHours(-hours)
+        return self.plus_hours(-hours)
 
     # -- Minute-level ---------------------------------------------------------
 
-    def plusMinutes(self, minutes: int) -> NepaliDateTime:
+    def plus_minutes(self, minutes: int) -> NepaliDateTime:
         """Return a copy with the given number of minutes added."""
         return NepaliDateTime(self.dt + datetime.timedelta(minutes=minutes))
 
-    def minusMinutes(self, minutes: int) -> NepaliDateTime:
+    def minus_minutes(self, minutes: int) -> NepaliDateTime:
         """Return a copy with the given number of minutes subtracted."""
-        return self.plusMinutes(-minutes)
+        return self.plus_minutes(-minutes)
 
     # -- Second-level ---------------------------------------------------------
 
-    def plusSeconds(self, seconds: int) -> NepaliDateTime:
+    def plus_seconds(self, seconds: int) -> NepaliDateTime:
         """Return a copy with the given number of seconds added."""
         return NepaliDateTime(self.dt + datetime.timedelta(seconds=seconds))
 
-    def minusSeconds(self, seconds: int) -> NepaliDateTime:
+    def minus_seconds(self, seconds: int) -> NepaliDateTime:
         """Return a copy with the given number of seconds subtracted."""
-        return self.plusSeconds(-seconds)
+        return self.plus_seconds(-seconds)
 
 
 # ---------------------------------------------------------------------------

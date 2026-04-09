@@ -51,9 +51,9 @@ def _demo() -> None:
         (2080, 12, 30),  # last day of 2080
         (2000, 6, 15),
     ]
-    for y, m, d in samples_bs:
-        ad = bs_to_ad(y, m, d)
-        print(f"  BS {y}-{m:02d}-{d:02d}  →  AD {ad}")
+    for year, month, day in samples_bs:
+        ad = bs_to_ad(year, month, day)
+        print(f"  BS {year}-{month:02d}-{day:02d}  →  AD {ad}")
 
     # 2. AD → BS
     print("\n[2] AD → BS conversion")
@@ -63,8 +63,8 @@ def _demo() -> None:
         datetime.date(1970, 1, 1),
     ]
     for ad in samples_ad:
-        y, m, d = ad_to_bs(ad)
-        print(f"  AD {ad}  →  BS {y}-{m:02d}-{d:02d}  ({_BS_MONTH_NAMES[m]})")
+        year, month, day = ad_to_bs(ad)
+        print(f"  AD {ad}  →  BS {year}-{month:02d}-{day:02d}  ({_BS_MONTH_NAMES[month]})")
 
     # 3. Round-trip
     print("\n[3] Round-trip BS→AD→BS")
