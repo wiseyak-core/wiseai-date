@@ -62,14 +62,14 @@ class TestMainDemos(unittest.TestCase):
     Test suite containing all scenarios from main.py's demo run.
     """
     def test_bs_to_ad_conversion(self):
-        self.assertEqual(bs_to_ad(2081, 1, 1), datetime.date(2024, 4, 14))
-        self.assertEqual(bs_to_ad(2080, 12, 30), datetime.date(2024, 4, 13))
-        self.assertEqual(bs_to_ad(2000, 6, 15), datetime.date(1943, 10, 2))
+        self.assertEqual(bs_to_ad(2081, 1, 1), datetime.date(2024, 4, 13))
+        self.assertEqual(bs_to_ad(2080, 12, 30), datetime.date(2024, 4, 12))
+        self.assertEqual(bs_to_ad(2000, 6, 15), datetime.date(1943, 10, 1))
 
     def test_ad_to_bs_conversion(self):
-        self.assertEqual(ad_to_bs(datetime.date(2024, 4, 13)), (2080, 12, 30))
-        self.assertEqual(ad_to_bs(datetime.date(1981, 4, 1)), (2037, 12, 18))
-        self.assertEqual(ad_to_bs(datetime.date(1970, 1, 1)), (2026, 9, 16))
+        self.assertEqual(ad_to_bs(datetime.date(2024, 4, 12)), (2080, 12, 30))
+        self.assertEqual(ad_to_bs(datetime.date(1981, 3, 31)), (2037, 12, 18))
+        self.assertEqual(ad_to_bs(datetime.date(1969, 12, 31)), (2026, 9, 16))
 
     def test_round_trip(self):
         test_dates = [(2037, 12, 19), (2081, 1, 1), (1980, 5, 20)]
@@ -81,9 +81,9 @@ class TestMainDemos(unittest.TestCase):
 
     def test_nepali_datetime_properties(self):
         ndt = NepaliDateTime.from_bs(2081, 4, 15, 10, 30, 45, 500)
-        self.assertEqual(ndt.dt.date(), datetime.date(2024, 7, 31))
+        self.assertEqual(ndt.dt.date(), datetime.date(2024, 7, 30))
         self.assertEqual(ndt.bs_month_name, "Shrawan")
-        self.assertEqual(ndt.bs_weekday_name, "Budhabar")
+        self.assertEqual(ndt.bs_weekday_name, "Mangalbar")
 
     def test_iterators(self):
         # Day
@@ -285,7 +285,12 @@ class TestDateGroupingJSONL(unittest.TestCase):
                 
             # Assert the counts match
             for key, expected_count in case['expected_counts'].items():
-                self.assertEqual(len(result.get(key, [])), expected_count)
+                val = len(result.get(key, []))
+                try:
+                    self.assertEqual(val, expected_count)
+                except AssertionError as e:
+                    print(f"FAILED case input: {case['input_dates']} result keys: {result.keys()} trying to find key {key}")
+                    raise e
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
