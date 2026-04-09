@@ -95,7 +95,7 @@ def _resolve_directional(expr: DateExpression, ref_date: datetime.date, tokens: 
     def get_exact_month(r: datetime.date, n: int, dr: int, bs: bool):
         if bs:
             from library.nepali_date import NepaliDateTime
-            target = NepaliDateTime.from_ad(r.year, r.month, r.day).plusMonths(n * dr).toLocalDate()
+            target = NepaliDateTime.from_ad(r.year, r.month, r.day).plus_months(n * dr).to_local_date()
         else:
             m = r.month + (n * dr)
             y = r.year + (m - 1) // 12
@@ -112,7 +112,7 @@ def _resolve_directional(expr: DateExpression, ref_date: datetime.date, tokens: 
     def get_exact_year(r: datetime.date, n: int, dr: int, bs: bool):
         if bs:
             from library.nepali_date import NepaliDateTime
-            target = NepaliDateTime.from_ad(r.year, r.month, r.day).plusYears(n * dr).toLocalDate()
+            target = NepaliDateTime.from_ad(r.year, r.month, r.day).plus_years(n * dr).to_local_date()
         else:
             try:
                 target = r.replace(year=r.year + (n * dr))
