@@ -32,6 +32,7 @@ from library.nepali_date import (
     current_bs_year,
 )
 
+
 # ---------------------------------------------------------------------------
 # SELF-TEST / DEMO
 # ---------------------------------------------------------------------------
@@ -46,9 +47,9 @@ def _demo() -> None:
     # 1. BS → AD
     print("\n[1] BS → AD conversion")
     samples_bs = [
-        (2081,  1,  1),   # BS New Year 2081
-        (2080, 12, 30),   # last day of 2080
-        (2000,  6, 15),
+        (2081, 1, 1),  # BS New Year 2081
+        (2080, 12, 30),  # last day of 2080
+        (2000, 6, 15),
     ]
     for y, m, d in samples_bs:
         ad = bs_to_ad(y, m, d)
@@ -57,9 +58,9 @@ def _demo() -> None:
     # 2. AD → BS
     print("\n[2] AD → BS conversion")
     samples_ad = [
-        datetime.date(2024, 4, 13),   # expected → BS 2081-01-01 (Baisakh) ✓
-        datetime.date(1981, 4,  1),   # expected → BS 2037-12-19 (Chaitra) ✓
-        datetime.date(1970, 1,  1),
+        datetime.date(2024, 4, 13),  # expected → BS 2081-01-01 (Baisakh) ✓
+        datetime.date(1981, 4, 1),  # expected → BS 2037-12-19 (Chaitra) ✓
+        datetime.date(1970, 1, 1),
     ]
     for ad in samples_ad:
         y, m, d = ad_to_bs(ad)
@@ -70,8 +71,10 @@ def _demo() -> None:
     test = (2037, 12, 19)
     ad_rt = bs_to_ad(*test)
     bs_rt = ad_to_bs(ad_rt)
-    ok    = bs_rt == test
-    print(f"  Original BS: {test}  →  AD: {ad_rt}  →  BS: {bs_rt}  {'✓' if ok else '✗'}")
+    ok = bs_rt == test
+    print(
+        f"  Original BS: {test}  →  AD: {ad_rt}  →  BS: {bs_rt}  {'✓' if ok else '✗'}")
+
 
     # 4. NepaliDateTime
     print("\n[4] NepaliDateTime")
@@ -113,8 +116,8 @@ def _demo() -> None:
     # 9. Range with stop
     print("\n[9] Day range with explicit stop")
     start = NepaliDateTime.from_bs(2081, 9, 1)
-    stop  = NepaliDateTime.from_bs(2081, 9, 6)
-    days  = list(nepali_range(start, stop, granularity="day"))
+    stop = NepaliDateTime.from_bs(2081, 9, 6)
+    days = list(nepali_range(start, stop, granularity="day"))
     print(f"  {[ndt.isoformat_bs() for ndt in days]}")
 
     # 10. BS calendar grid
@@ -139,15 +142,19 @@ def _demo() -> None:
     # 12. Full Devanagari month + weekday name mapping table
     print("\n[12] BS month name mapping (Latin ↔ Devanagari)")
     print(f"  {'No':>3}  {'Latin':<12}  {'Devanagari'}")
-    print(f"  {'─'*3}  {'─'*12}  {'─'*12}")
+    print(f"  {'─' * 3}  {'─' * 12}  {'─' * 12}")
     for i in range(1, 13):
-        print(f"  {i:>3}  {_BS_MONTH_NAMES[i]:<12}  {_BS_MONTH_NAMES_DEVANAGARI[i]}")
+        print(
+            f"  {i:>3}  {_BS_MONTH_NAMES[i]:<12}  {_BS_MONTH_NAMES_DEVANAGARI[i]}"
+        )
 
     print("\n[13] BS weekday name mapping (Latin ↔ Devanagari)")
     print(f"  {'No':>3}  {'Latin':<12}  {'Devanagari'}")
-    print(f"  {'─'*3}  {'─'*12}  {'─'*14}")
+    print(f"  {'─' * 3}  {'─' * 12}  {'─' * 14}")
     for i in range(7):
-        print(f"  {i:>3}  {_BS_WEEKDAY_NAMES[i]:<12}  {_BS_WEEKDAY_NAMES_DEVANAGARI[i]}")
+        print(
+            f"  {i:>3}  {_BS_WEEKDAY_NAMES[i]:<12}  {_BS_WEEKDAY_NAMES_DEVANAGARI[i]}"
+        )
 
     # 14. NepaliDateTime Devanagari properties
     print("\n[14] NepaliDateTime — Devanagari properties")
@@ -157,8 +164,12 @@ def _demo() -> None:
     print(f"  Year   : {ndt2.bs_year}  →  {ndt2.bs_year_devanagari}")
     print(f"  Month# : {ndt2.bs_month:02d}  →  {ndt2.bs_month_devanagari}")
     print(f"  Day#   : {ndt2.bs_day:02d}  →  {ndt2.bs_day_devanagari}")
-    print(f"  Month  : {ndt2.bs_month_name}  →  {ndt2.bs_month_name_devanagari}")
-    print(f"  Weekday: {ndt2.bs_weekday_name}  →  {ndt2.bs_weekday_name_devanagari}")
+    print(
+        f"  Month  : {ndt2.bs_month_name}  →  {ndt2.bs_month_name_devanagari}"
+    )
+    print(
+        f"  Weekday: {ndt2.bs_weekday_name}  →  {ndt2.bs_weekday_name_devanagari}"
+    )
     print(f"  ISO-BS : {ndt2.isoformat_bs()}")
     print(f"  ISO-dev: {ndt2.isoformat_bs_devanagari()}")
 
@@ -177,7 +188,9 @@ def _demo() -> None:
     print("\n[16] Day iterator — first 5 days of BS 2081 with Devanagari")
     it2 = make_iterator("day", NepaliDateTime.from_bs(2081, 1, 1), count=5)
     for ndt in it2:
-        print(f"  {ndt.isoformat_bs_devanagari()}  {ndt.bs_weekday_name_devanagari}")
+        print(
+            f"  {ndt.isoformat_bs_devanagari()}  {ndt.bs_weekday_name_devanagari}"
+        )
 
     print(f"\n{SEP}")
     print("  All demos complete.")
@@ -229,7 +242,7 @@ def _demo() -> None:
     print(r)
 
     print(f"\n  Current BS year: {current_bs_year()}")
-    r = bs_month_to_ad_range('Baisakh')   # no year → uses current BS year
+    r = bs_month_to_ad_range('Baisakh')  # no year → uses current BS year
     print(f"  Baisakh (current BS year) →")
     print(r)
 
