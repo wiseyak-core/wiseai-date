@@ -1202,6 +1202,7 @@ def ad_half_to_bs_range(
 
 FIELD_YEAR: str = "year"
 FIELD_MONTH: str = "month"
+FIELD_QUARTER: str = "quarter"
 FIELD_DAY: str = "day"
 FIELD_DAY_OF_YEAR: str = "day_of_year"
 FIELD_DAY_OF_WEEK: str = "day_of_week"
@@ -1952,6 +1953,11 @@ def nepali_range(
             for _ in range(abs(n)):
                 result = _next_bs_month(result)
             return result if n > 0 else NotImplemented  # backward month NYI
+        if gran_lower == FIELD_QUARTER:
+            result = cur
+            for _ in range(abs(n * 3)):
+                result = _next_bs_month(result)
+            return result if n > 0 else NotImplemented  # backward quarter NYI
         if gran_lower == FIELD_YEAR:
             result = cur
             for _ in range(abs(n)):
@@ -1962,7 +1968,7 @@ def nepali_range(
         if delta is None:
             raise ValueError(
                 f"Unknown granularity '{granularity}'. "
-                f"Choose from: {sorted(_GRANULARITY_FIXED)} + ['{FIELD_MONTH}', '{FIELD_YEAR}']."
+                f"Choose from: {sorted(_GRANULARITY_FIXED)} + ['{FIELD_MONTH}', '{FIELD_QUARTER}', '{FIELD_YEAR}']."
             )
         return NepaliDateTime(cur.dt + delta * n)
 
@@ -2053,6 +2059,11 @@ class MonthIterator(_BaseIterator):
     _granularity = FIELD_MONTH
 
 
+class QuarterIterator(_BaseIterator):
+    """Iterate every BS calendar quarter (3 months, variable-length)."""
+    _granularity = FIELD_QUARTER
+
+
 class YearIterator(_BaseIterator):
     """Iterate every BS calendar year (variable-length)."""
     _granularity = FIELD_YEAR
@@ -2072,6 +2083,7 @@ _ITERATOR_REGISTRY: dict[str, type] = {
     FIELD_WEEK: WeekIterator,
     FIELD_FORTNIGHT: FortnightIterator,
     FIELD_MONTH: MonthIterator,
+    FIELD_QUARTER: QuarterIterator,
     FIELD_YEAR: YearIterator,
 }
 
@@ -2091,7 +2103,7 @@ def make_iterator(
     ----------
     granularity : str
         One of 'millisecond', 'second', 'minute', 'hour', 'day',
-        'week', 'fortnight', 'month', 'year'.
+        'week', 'fortnight', 'month', 'quarter', 'year'.
     start, stop : NepaliDateTime
         Range bounds (stop is exclusive).
     step        : int  — ticks per granularity unit (default 1).
@@ -2464,3 +2476,19 @@ def group_dates(
         ]
         for bucket in sorted(buckets, key=lambda b: b.start_ad)
     }
+
+
+if __name__ == "__main__":
+    # Example usage of iterators including the new QuarterIterator
+    start_date = NepaliDateTime.from_bs(2080, 10, 1)
+
+    print("QuarterIterator example:")
+    q_iter = QuarterIterator(start_date, count=4)
+    for ndt in q_iter:
+        print(f"  {ndt.isoformat_bs()} (Quarter)")
+
+    print("\nmake_iterator('quarter') example:")
+    it = make_iterator("quarter", start_date, count=2)
+    for ndt in it:
+        print(f"  {ndt.isoformat_bs()} (Quarter)")
+
