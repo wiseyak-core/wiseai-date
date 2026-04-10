@@ -162,10 +162,10 @@ _BS_YEAR_DATA: dict[int, Tuple[int, ...]] = {
 }
 # fmt: on
 
-# Anchor: BS 1970-01-01  ==  AD 1913-04-14
+# Anchor: BS 1970-01-01  ==  AD 1913-04-13
 # Verified against official GoN calendar: BS 2081-01-01 = AD 2024-04-13
 _ANCHOR_BS = (1970, 1, 1)
-_ANCHOR_AD = datetime.date(1913, 4, 14)
+_ANCHOR_AD = datetime.date(1913, 4, 13)
 
 # Supported BS range
 TOTAL_MONTHS: int = 12
@@ -2213,6 +2213,10 @@ _PHRASE_ALIASES: Dict[str, str] = {
 # ---------------------------------------------------------------------------
 _DAY_DELTA = lambda n: datetime.timedelta(days=n)
 
+def _resolve_week_relative(r: datetime.date, bs: bool, offset: int, label: str) -> DateRange:
+    start_offset = (r.weekday() + 1) % 7 if bs else r.weekday()
+    start = r - _DAY_DELTA(start_offset) + _DAY_DELTA(offset * 7)
+    return DateRange(start, start + _DAY_DELTA(6), label=label)
 
 def _resolve_month_relative(r: datetime.date, bs: bool,
                             offset: int = 0) -> DateRange:
@@ -2243,15 +2247,9 @@ _PHRASE_RESOLVERS: Dict[str, Callable[[datetime.date, bool], DateRange]] = {
                                               r + _DAY_DELTA(1),
                                               label="Tomorrow"),
 
-    THIS_WEEK_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(r.weekday()),
-                                               r + _DAY_DELTA(6 - r.weekday()),
-                                               label="This Week"),
-    LAST_WEEK_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(r.weekday() + 7),
-                                               r - _DAY_DELTA(r.weekday() + 1),
-                                               label="Last Week"),
-    NEXT_WEEK_LITERAL: lambda r, bs: DateRange(r + _DAY_DELTA(7 - r.weekday()),
-                                               r + _DAY_DELTA(13 - r.weekday()),
-                                               label="Next Week"),
+    THIS_WEEK_LITERAL: lambda r, bs: _resolve_week_relative(r, bs, 0, "This Week"),
+    LAST_WEEK_LITERAL: lambda r, bs: _resolve_week_relative(r, bs, -1, "Last Week"),
+    NEXT_WEEK_LITERAL: lambda r, bs: _resolve_week_relative(r, bs, 1, "Next Week"),
 
     ROLLING_7_LITERAL: lambda r, bs: DateRange(r - _DAY_DELTA(6), r,
                                                label="Last 7 Days"),
