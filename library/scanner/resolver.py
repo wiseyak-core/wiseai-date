@@ -7,21 +7,71 @@ from library.nepali_date import (
     DateRange, _PHRASE_RESOLVERS, _resolve_month_relative, _resolve_year_relative,
     current_bs_year
 )
-from library.scanner.types import DateExpression, ResolvedDate, ScopeLevel, TokenKind, Token
+from library.scanner.types import (
+    DateExpression, 
+    ResolvedDate, 
+    ScopeLevel, 
+    TokenKind, 
+    Token
+)
 from library.scanner.lexer import _normalize_numeral
 
+# ── Unit Constants ──
+_UNIT_YEAR = "year"
+_UNIT_QUARTER = "quarter"
+_UNIT_MONTH_EXPLICIT = "month_explicit"
+_UNIT_MONTH = "month"
+_UNIT_FORTNIGHT = "fortnight"
+_UNIT_WEEK = "week"
+_UNIT_WEEKDAY_EXPLICIT = "weekday_explicit"
+_UNIT_DAY = "day"
+_UNIT_HALF = "half"
+_UNIT_THIRD = "third"
+
+# ── Result Type Constants ──
+_TYPE_DAY = "day"
+_TYPE_MONTH = "month"
+_TYPE_YEAR = "year"
+_TYPE_WEEK = "week"
+_TYPE_RANGE = "range"
+_TYPE_POSTPOSITION_RANGE = "postposition_range"
+
+# ── Modifier Constants ──
+_MOD_THIS = "this"
+_MOD_LAST = "last"
+_MOD_NEXT = "next"
+_MOD_MIDDLE_OF = "middle_of"
+_MOD_FIRST_OF = "first_of"
+_MOD_END_OF = "end_of"
+_MOD_LAST_OF = "last_of"
+
+# Set of structural boundary modifiers that should not be overwritten by filler articles
+_BOUNDARY_MODIFIERS = frozenset({
+    _MOD_MIDDLE_OF, _MOD_FIRST_OF,
+    _MOD_END_OF, _MOD_LAST_OF,
+})
+
+# Valid modifiers for week resolution
+_WEEK_MODIFIERS = frozenset({
+    _MOD_LAST, _MOD_NEXT, _MOD_THIS,
+})
 
 _GRANULARITY = {
-    "year": 4,
-    "quarter": 3.2,
-    "month_explicit": 3.5,
-    "month": 3,
-    "fortnight": 2.5,
-    "week": 2,
-    "weekday_explicit": 1.5,
-    "day": 1
+    _UNIT_DAY: 1,
+    _UNIT_WEEKDAY_EXPLICIT: 2,
+    _UNIT_WEEK: 3,
+    _UNIT_FORTNIGHT: 4,
+    _UNIT_MONTH: 5,
+    _UNIT_MONTH_EXPLICIT: 6,
+    _UNIT_QUARTER: 7,
+    _UNIT_YEAR: 8,
 }
 
+# ── Narrowing Month Positions ──
+# Maps boundary modifiers to the month number they resolve to inside a parent year scope.
+_NARROW_MONTH_FIRST = 1
+_NARROW_MONTH_MIDDLE = 7
+_NARROW_MONTH_LAST = 12
 
 def _build_scope_stack(tokens: List[Token]) -> List[ScopeLevel]:
     """Generates the hierarchical scope stack from tokens using a reducer pattern."""
@@ -29,28 +79,34 @@ def _build_scope_stack(tokens: List[Token]) -> List[ScopeLevel]:
     current_state = {"modifier": None, "ordinal": None, "number": None}
 
     def _flush_scope(unit_val: str):
-        modifier, ordinal, number = current_state["modifier"], current_state["ordinal"], current_state["number"]
+        modifier = current_state["modifier"]
+        ordinal = current_state["ordinal"]
+        number = current_state["number"]
         # Default modifier if entirely unconstrained for the root scope
         if not any(current_state.values()) and not stack and token.kind == TokenKind.TEMPORAL_UNIT:
-            modifier = "this"
+            modifier = _MOD_THIS
         stack.append(ScopeLevel(unit=unit_val, ordinal=ordinal, modifier=modifier))
         current_state.update(modifier=None, ordinal=None, number=None)
 
     def _safe_modifier_update(current_mod: str | None, new_mod: str) -> str:
         # Don't let filler articles mapped as 'this' overwrite a structural boundary
-        if new_mod == "this" and current_mod in {"middle_of", "first_of", "end_of", "last_of"}:
+        if new_mod == _MOD_THIS and current_mod in _BOUNDARY_MODIFIERS:
             return current_mod
         return new_mod
 
     # State update map
     _STATE_UPDATES = {
-        TokenKind.TEMPORAL_MODIFIER: lambda t: current_state.update(modifier=_safe_modifier_update(current_state.get("modifier"), t.value)),
+        TokenKind.TEMPORAL_MODIFIER: lambda t: current_state.update(
+                modifier=_safe_modifier_update(
+                    current_state.get("modifier"), t.value
+                )
+        ),
         TokenKind.ORDINAL: lambda t: current_state.update(ordinal=t.value),
         TokenKind.NUMBER: lambda t: current_state.update(number=t.value),
         TokenKind.TEMPORAL_UNIT: lambda t: _flush_scope(t.value),
-        TokenKind.MONTH_NAME: lambda t: _flush_scope("month_explicit"),
-        TokenKind.WEEKDAY_NAME: lambda t: _flush_scope("weekday_explicit"),
-        TokenKind.TARIKH: lambda t: _flush_scope("day")
+        TokenKind.MONTH_NAME: lambda t: _flush_scope(_UNIT_MONTH_EXPLICIT),
+        TokenKind.WEEKDAY_NAME: lambda t: _flush_scope(_UNIT_WEEKDAY_EXPLICIT),
+        TokenKind.TARIKH: lambda t: _flush_scope(_UNIT_DAY)
     }
 
     for token in tokens:
@@ -59,31 +115,48 @@ def _build_scope_stack(tokens: List[Token]) -> List[ScopeLevel]:
 
     # If there's an unflushed state at the end (e.g. modifier without unit), default to day
     if any(current_state.values()):
-        _flush_scope("day")
+        _flush_scope(_UNIT_DAY)
 
     return stack
 
 # ── Resolvers for Specific Patterns ── #
 
-def _resolve_iso_date(expr: DateExpression, ref_date: datetime.date, token: Token, is_bs: bool) -> ResolvedDate:
+def _resolve_iso_date(
+    expr: DateExpression, 
+    ref_date: datetime.date, 
+    token: Token, 
+    is_bs: bool
+) -> ResolvedDate:
     norm_val = _normalize_numeral(token.norm)
     y, m, d = (int(x) for x in norm_val.split('-'))
     start_str = f"{y:04d}-{m:02d}-{d:02d}"
     return ResolvedDate(
-        expression=expr, calendar=expr.calendar_signal, type="day",
+        expression=expr, 
+        calendar=expr.calendar_signal, 
+        type=_TYPE_DAY,
         year=y, month=m, day=d, start=start_str, end=start_str, iso_replacement=token.text
     )
 
-def _resolve_relative_adverb(expr: DateExpression, ref_date: datetime.date, token: Token, is_bs: bool) -> ResolvedDate:
+def _resolve_relative_adverb(
+    expr: DateExpression, 
+    ref_date: datetime.date, 
+    token: Token, 
+    is_bs: bool
+) -> ResolvedDate:
     if token.value == "day_before_yesterday":
         dr = DateRange(ref_date - datetime.timedelta(days=2), ref_date - datetime.timedelta(days=2))
     elif token.value == "day_after_tomorrow":
         dr = DateRange(ref_date + datetime.timedelta(days=2), ref_date + datetime.timedelta(days=2))
     else:
         dr = _PHRASE_RESOLVERS[token.value](ref_date, is_bs)
-    return _build_resolved(expr, dr, is_bs, "day")
+    return _build_resolved(expr, dr, is_bs, _TYPE_DAY)
 
-def _resolve_directional(expr: DateExpression, ref_date: datetime.date, tokens: List[Token], is_bs: bool) -> Optional[ResolvedDate]:
+def _resolve_directional(
+    expr: DateExpression, 
+    ref_date: datetime.date, 
+    tokens: List[Token], 
+    is_bs: bool
+) -> Optional[ResolvedDate]:
     num_t = next((t for t in tokens if t.kind == TokenKind.NUMBER), None)
     unit_t = next((t for t in tokens if t.kind == TokenKind.TEMPORAL_UNIT), None)
     dir_t = next((t for t in tokens if t.kind == TokenKind.DIRECTION), None)
@@ -92,43 +165,66 @@ def _resolve_directional(expr: DateExpression, ref_date: datetime.date, tokens: 
     
     val = num_t.value if num_t else 1
     unit, direction = unit_t.value, dir_t.value
-    def get_exact_month(r: datetime.date, n: int, dr: int, bs: bool):
+    def get_exact_month(ref: datetime.date, count: int, sign: int, bs: bool):
         if bs:
             from library.nepali_date import NepaliDateTime
-            target = NepaliDateTime.from_ad(r.year, r.month, r.day).plus_months(n * dr).to_local_date()
+            target = (
+                NepaliDateTime.from_ad(ref.year, ref.month, ref.day)
+                .plus_months(count * sign).to_local_date()
+            )
         else:
-            m = r.month + (n * dr)
-            y = r.year + (m - 1) // 12
-            m = (m - 1) % 12 + 1
-            day = r.day
-            while True:
+            raw_month = ref.month + (count * sign)
+            year = ref.year + (raw_month - 1) // 12
+            month = (raw_month - 1) % 12 + 1
+            day = ref.day
+            # Clamp day to valid range for target month
+            max_attempts = ref.day
+            for attempt in range(max_attempts):
                 try:
-                    target = datetime.date(y, m, day)
+                    target = datetime.date(
+                        year, month, day
+                    )
                     break
                 except ValueError:
                     day -= 1
+            else:
+                target = datetime.date(
+                    year, month, 1
+                )
         return DateRange(target, target)
 
-    def get_exact_year(r: datetime.date, n: int, dr: int, bs: bool):
+    def get_exact_year(ref: datetime.date, count: int, sign: int, bs: bool):
         if bs:
             from library.nepali_date import NepaliDateTime
-            target = NepaliDateTime.from_ad(r.year, r.month, r.day).plus_years(n * dr).to_local_date()
+            target = (
+                NepaliDateTime.from_ad(ref.year, ref.month, ref.day)
+                .plus_years(count * sign).to_local_date()
+            )
         else:
             try:
-                target = r.replace(year=r.year + (n * dr))
+                target = ref.replace(year=ref.year + (count * sign))
             except ValueError:
-                target = r.replace(year=r.year + (n * dr), day=28)
+                target = ref.replace(year=ref.year + (count * sign), day=28)
         return DateRange(target, target)
 
     _DIR_EVALUATORS = {
-        "day": lambda r, n, dr: DateRange(r + datetime.timedelta(days=n * dr), r + datetime.timedelta(days=n * dr)),
-        "week": lambda r, n, dr: DateRange(r + datetime.timedelta(days=n * 7 * dr), r + datetime.timedelta(days=n * 7 * dr)),
-        "fortnight": lambda r, n, dr: DateRange(r + datetime.timedelta(days=n * 14 * dr), r + datetime.timedelta(days=n * 14 * dr)),
-        "month": lambda r, n, dr: get_exact_month(r, n, dr, is_bs),
-        "third": lambda r, n, dr: get_exact_month(r, n * 4, dr, is_bs),
-        "quarter": lambda r, n, dr: get_exact_month(r, n * 3, dr, is_bs),
-        "half": lambda r, n, dr: get_exact_month(r, n * 6, dr, is_bs),
-        "year": lambda r, n, dr: get_exact_year(r, n, dr, is_bs),
+        _UNIT_DAY: lambda r, n, dr: DateRange(
+            r + datetime.timedelta(days=n * dr), 
+            r + datetime.timedelta(days=n * dr)
+        ),
+        _UNIT_WEEK: lambda r, n, dr: DateRange(
+            r + datetime.timedelta(days=n * 7 * dr), 
+            r + datetime.timedelta(days=n * 7 * dr)
+        ),
+        _UNIT_FORTNIGHT: lambda r, n, dr: DateRange(
+            r + datetime.timedelta(days=n * 14 * dr), 
+            r + datetime.timedelta(days=n * 14 * dr)
+        ),
+        _UNIT_MONTH: lambda r, n, dr: get_exact_month(r, n, dr, is_bs),
+        _UNIT_THIRD: lambda r, n, dr: get_exact_month(r, n * 4, dr, is_bs),
+        _UNIT_QUARTER: lambda r, n, dr: get_exact_month(r, n * 3, dr, is_bs),
+        _UNIT_HALF: lambda r, n, dr: get_exact_month(r, n * 6, dr, is_bs),
+        _UNIT_YEAR: lambda r, n, dr: get_exact_year(r, n, dr, is_bs),
     }
     
     if unit in _DIR_EVALUATORS:
@@ -148,13 +244,19 @@ def _apply_boundary(dr: DateRange, modifier: Optional[str]) -> Optional[DateRang
         case _: return None
 
 def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, tokens: List[Token]) -> DateRange:
-    _offset_map = {"last": -1, "next": 1, "this": 0}
+    _offset_map = {_MOD_LAST: -1, _MOD_NEXT: 1, _MOD_THIS: 0}
     offset = _offset_map.get(scope.modifier, 0)
 
     def get_year():
-        if scope.modifier == "middle_of":
+        if scope.modifier == _MOD_MIDDLE_OF:
             # Middle of year is Kartik (7) or July (7)
-            return bs_month_to_ad_range(7, current_bs_year()) if is_bs else ad_month_to_bs_range(7, datetime.date.today().year)
+            if is_bs:
+                return bs_month_to_ad_range(
+                    _NARROW_MONTH_MIDDLE, current_bs_year()
+                )
+            return ad_month_to_bs_range(
+                _NARROW_MONTH_MIDDLE, datetime.date.today().year
+            )
         yr = _resolve_year_relative(ref_date, is_bs, offset)
         return _apply_boundary(yr, scope.modifier) or yr
 
@@ -163,7 +265,7 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
         return _apply_boundary(dr, scope.modifier) or dr
 
     def get_week():
-        mod = scope.modifier if scope.modifier in ["last", "next", "this"] else "this"
+        mod = scope.modifier if scope.modifier in _WEEK_MODIFIERS else _MOD_THIS
         wk = _PHRASE_RESOLVERS[f"{mod}_week"](ref_date, is_bs)
         return _apply_boundary(wk, scope.modifier) or wk
 
@@ -183,37 +285,39 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
         w_token = next((t for t in tokens if t.kind == TokenKind.WEEKDAY_NAME), None)
         if not w_token: return None
         target_wd = w_token.value
-        mod = scope.modifier if scope.modifier in ["last", "next", "this"] else "this"
+        mod = scope.modifier if scope.modifier in _WEEK_MODIFIERS else _MOD_THIS
         dr_week = _PHRASE_RESOLVERS[f"{mod}_week"](ref_date, is_bs)
         return _get_nth_day(dr_week, target_wd + 1)
         
     _ROOT_HANDLERS = {
-        "year": get_year,
-        "month": get_month,
-        "week": get_week,
-        "month_explicit": get_month_explicit,
-        "weekday_explicit": get_weekday_explicit,
-        "day": lambda: _PHRASE_RESOLVERS["today"](ref_date, is_bs)
+        _UNIT_YEAR: get_year,
+        _UNIT_MONTH: get_month,
+        _UNIT_WEEK: get_week,
+        _UNIT_MONTH_EXPLICIT: get_month_explicit,
+        _UNIT_WEEKDAY_EXPLICIT: get_weekday_explicit,
+        _UNIT_DAY: lambda: _PHRASE_RESOLVERS["today"](ref_date, is_bs)
     }
     return _ROOT_HANDLERS.get(scope.unit, lambda: None)()
 
 def _eval_narrowing_scope(scope: ScopeLevel, parent_dr: DateRange, is_bs: bool) -> DateRange:
-    modifier = "end_of" if scope.modifier == "last" else scope.modifier
+    modifier = _MOD_END_OF if scope.modifier == _MOD_LAST else scope.modifier
 
     def narrow_day():
         match modifier:
             case "end_of": return DateRange(parent_dr.end_ad, parent_dr.end_ad)
             case "first_of": return DateRange(parent_dr.start_ad, parent_dr.start_ad)
             case "middle_of":
-                mid_ad = parent_dr.start_ad + datetime.timedelta(days=(parent_dr.end_ad - parent_dr.start_ad).days // 2)
+                mid_ad = parent_dr.start_ad + datetime.timedelta(
+                    days=(parent_dr.end_ad - parent_dr.start_ad).days // 2
+                )
                 return DateRange(mid_ad, mid_ad)
             case _: return _get_nth_day(parent_dr, scope.ordinal) if scope.ordinal else parent_dr
 
     def narrow_month():
         match modifier:
-            case "middle_of": m_num = 7
-            case "end_of": m_num = 12
-            case "first_of": m_num = 1
+            case "middle_of": m_num = _NARROW_MONTH_MIDDLE
+            case "end_of": m_num = _NARROW_MONTH_LAST
+            case "first_of": m_num = _NARROW_MONTH_FIRST
             case _: m_num = scope.ordinal if scope.ordinal else parent_dr.start_bs[1]
         return bs_month_to_ad_range(m_num, parent_dr.start_bs[0]) if is_bs else ad_month_to_bs_range(m_num, parent_dr.start_ad.year)
 
@@ -241,13 +345,13 @@ def _eval_narrowing_scope(scope: ScopeLevel, parent_dr: DateRange, is_bs: bool) 
         return DateRange(st, en) if st <= parent_dr.end_ad else parent_dr
 
     _NARROW_HANDLERS = {
-        "month": narrow_month,
-        "day": narrow_day,
-        "week": lambda: narrow_duration(7),
-        "fortnight": lambda: narrow_duration(14),
-        "half": lambda: narrow_generic(2),
-        "third": lambda: narrow_generic(3),
-        "quarter": lambda: narrow_generic(4),
+        _UNIT_MONTH: narrow_month,
+        _UNIT_DAY: narrow_day,
+        _UNIT_WEEK: lambda: narrow_duration(7),
+        _UNIT_FORTNIGHT: lambda: narrow_duration(14),
+        _UNIT_HALF: lambda: narrow_generic(2),
+        _UNIT_THIRD: lambda: narrow_generic(3),
+        _UNIT_QUARTER: lambda: narrow_generic(4),
     }
     return _NARROW_HANDLERS.get(scope.unit, lambda: parent_dr)()
 
@@ -301,13 +405,13 @@ def _resolve_explicit_range(expr: DateExpression, ref_date: datetime.date, is_bs
                 bs_to_ad(*[int(x) for x in left.start.split('-')]),
                 bs_to_ad(*[int(x) for x in right.end.split('-')])
             )
-            return _build_resolved(expr, DateRange(st_ad, en_ad), True, "postposition_range")
+            return _build_resolved(expr, DateRange(st_ad, en_ad), True, _TYPE_POSTPOSITION_RANGE)
         case (left, right, False):
             st_ad, en_ad = minmax(
                 datetime.date(*[int(x) for x in left.start.split('-')]),
                 datetime.date(*[int(x) for x in right.end.split('-')])
             )
-            return _build_resolved(expr, DateRange(st_ad, en_ad), False, "postposition_range")
+            return _build_resolved(expr, DateRange(st_ad, en_ad), False, _TYPE_POSTPOSITION_RANGE)
             
     return None
 
@@ -354,38 +458,48 @@ def _build_resolved(expr: DateExpression, dr: DateRange, is_bs: bool, unit: str)
     from library.scanner.vocabulary import _DEVANAGARI_DIGIT_MAP
     
     # Extract structural dates
-    (y, m, d), (ye, me, de) = (dr.start_bs, dr.end_bs) if is_bs else ((dr.start_ad.year, dr.start_ad.month, dr.start_ad.day), (dr.end_ad.year, dr.end_ad.month, dr.end_ad.day))
-    
+    if is_bs:
+        (year, month, day) = dr.start_bs
+        (year_end, month_end, day_end) = dr.end_bs
+    else:
+        year = dr.start_ad.year
+        month = dr.start_ad.month
+        day = dr.start_ad.day
+        year_end = dr.end_ad.year
+        month_end = dr.end_ad.month
+        day_end = dr.end_ad.day
+
     # Type mapping
-    r_type = "month" if unit == "month_explicit" else ("day" if unit == "weekday_explicit" else unit)
+    result_type = _TYPE_MONTH if unit == _UNIT_MONTH_EXPLICIT else (_TYPE_DAY if unit == _UNIT_WEEKDAY_EXPLICIT else unit)
     
     # Infer result type from range duration for root-level modifier overrides
     days_span = (dr.end_ad - dr.start_ad).days + 1
-    if days_span == 1 and r_type not in ("range",):
-        r_type = "day"
-    elif r_type == "year" and 27 <= days_span <= 32: 
-        r_type = "month"
+    if days_span == 1 and result_type != _TYPE_RANGE:
+        result_type = _TYPE_DAY
+    elif result_type == _TYPE_YEAR and 27 <= days_span <= 32: 
+        result_type = _TYPE_MONTH
     
-    if days_span > 1 and r_type == "day": r_type = "range"
-    if days_span > 1 and unit == "postposition_range": r_type = "range"
+    if days_span > 1 and result_type == _TYPE_DAY: result_type = _TYPE_RANGE
+    if days_span > 1 and unit == _TYPE_POSTPOSITION_RANGE: result_type = _TYPE_RANGE
     
     # Format ISO strings
     iso_formats = {
-        "month": lambda: f"{y:04d}-{m:02d}",
-        "year": lambda: f"{y:04d}",
-        "range": lambda: f"{y:04d}-{m:02d}-{d:02d}~{ye:04d}-{me:02d}-{de:02d}",
-        "default": lambda: f"{y:04d}-{m:02d}-{d:02d}" if dr.start_ad == dr.end_ad else \
-                           (f"{y:04d}-{m:02d}-{d:02d}~{de:02d}" if (m, y) == (me, ye) else f"{y:04d}-{m:02d}-{d:02d}~{ye:04d}-{me:02d}-{de:02d}")
+        _TYPE_MONTH: lambda: f"{year:04d}-{month:02d}",
+        _TYPE_YEAR: lambda: f"{year:04d}",
+        _TYPE_RANGE: lambda: f"{year:04d}-{month:02d}-{day:02d}~{year_end:04d}-{month_end:02d}-{day_end:02d}",
+        "default": lambda: f"{year:04d}-{month:02d}-{day:02d}" if dr.start_ad == dr.end_ad else \
+                           (f"{year:04d}-{month:02d}-{day:02d}~{day_end:02d}" if (month, year) == (month_end, year_end) else f"{year:04d}-{month:02d}-{day:02d}~{year_end:04d}-{month_end:02d}-{day_end:02d}")
     }
-    iso_repl = iso_formats.get(r_type, iso_formats["default"])()
+    iso_repl = iso_formats.get(result_type, iso_formats["default"])()
     
     # Devanagari mirroring
     if is_bs and any("\u0900" <= c <= "\u097F" for t in expr.tokens for c in t.text):
         iso_repl = iso_repl.translate(_DEVANAGARI_DIGIT_MAP)
 
     return ResolvedDate(
-        expression=expr, calendar="BS" if is_bs else "AD", type=r_type,
-        year=y, month=m, day=d,
-        start=f"{y:04d}-{m:02d}-{d:02d}", end=f"{ye:04d}-{me:02d}-{de:02d}",
+        expression=expr, calendar="BS" if is_bs else "AD", type=result_type,
+        year=year, month=month, day=day,
+        start=f"{year:04d}-{month:02d}-{day:02d}", 
+        end=f"{year_end:04d}-{month_end:02d}-{day_end:02d}",
         iso_replacement=iso_repl
     )

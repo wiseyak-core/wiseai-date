@@ -1,17 +1,41 @@
 import re
 from typing import List, Callable, Dict, Any, Tuple
 
-from library.nepali_date import _BS_MONTH_ALIASES, _AD_MONTH_ALIASES, _WEEKDAY_ALIASES
+from library.nepali_date import (
+    _BS_MONTH_ALIASES, 
+    _AD_MONTH_ALIASES, 
+    _WEEKDAY_ALIASES
+)
 from library.scanner.types import Token, TokenKind
 from library.scanner.vocabulary import (
-    _TEMPORAL_UNITS, _TEMPORAL_MODIFIERS, _ORDINALS, _POSTPOSITIONS,
-    _RECURRENCE_WORDS, _RELATIVE_ADVERBS, _DIRECTION_WORDS,
-    _KEYWORD_TARIKH, _KEYWORD_GATE, _PUNCTUATIONS, _DEVANAGARI_DIGIT_REVERSE,
+    _TEMPORAL_UNITS, 
+    _TEMPORAL_MODIFIERS, 
+    _ORDINALS, 
+    _POSTPOSITIONS,
+    _RECURRENCE_WORDS, 
+    _RELATIVE_ADVERBS, 
+    _DIRECTION_WORDS,
+    _KEYWORD_TARIKH, 
+    _KEYWORD_GATE, 
+    _PUNCTUATIONS, 
+    _DEVANAGARI_DIGIT_REVERSE,
     _WORD_NUMBERS
 )
 
 _ISO_DATE_PATTERN = re.compile(r"^([0-9०-९]{4})-([0-9०-९]{2})-([0-9०-९]{2})$")
 _NUMBER_PATTERN = re.compile(r"^[0-9०-९]+$")
+
+# Multiword phrases
+_MULTIWORD_PHRASES = [
+    "day after tomorrow",
+    "day before yesterday",
+    "start of",
+    "end of",
+    "middle of",
+    "beginning of",
+    "close of",
+    "half year",
+]
 
 def _normalize_numeral(word: str) -> str:
     return "".join(_DEVANAGARI_DIGIT_REVERSE.get(ch, ch) for ch in word)
@@ -54,14 +78,15 @@ def lex(text: str) -> List[Token]:
     """Tokenizes raw text into Tokens, dynamically extracting postposition suffixes."""
     # Pre-process multi-word English relative adverbs to avoid them being split,
     # mapping spaces to underscores to perfectly preserve index span lengths
-    for phrase in ["day after tomorrow", "day before yesterday", 
-                   "start of", "end of", "middle of", "beginning of", "close of", "half year"]:
-        idx = text.lower().find(phrase)
+    text_lower = text.lower()
+    for phrase in _MULTIWORD_PHRASES:
+        idx = text_lower.find(phrase)
         while idx != -1:
             end_idx = idx + len(phrase)
             chunk = text[idx:end_idx].replace(" ", "_")
             text = text[:idx] + chunk + text[end_idx:]
-            idx = text.lower().find(phrase)
+            text_lower = text.lower()
+            idx = text_lower.find(phrase)
 
     # Split by spaces and punctuation, retaining all parts for accurate offset counting
     pieces = re.split(r"(\s+|[.,!?;:|।])", text)
@@ -86,9 +111,19 @@ def lex(text: str) -> List[Token]:
         # Suffix matching logic using generator to find the first valid agglutinate
         agglutinate = next(
             ([
-                _classify_word(piece[:-len(postposition)], start_char, start_char + len(piece[:-len(postposition)])),
-                Token(postposition, postposition, TokenKind.POSTPOSITION, (start_char + len(piece[:-len(postposition)]), end_char))
-            ] for postposition in sorted_postpositions if piece.endswith(postposition) and len(piece) > len(postposition) and piece[:-len(postposition)].lower() in temporal_roots),
+                _classify_word(
+                    piece[:-len(pp)], start_char, 
+                    start_char + len(piece[:-len(pp)])
+                ),
+                Token(
+                    pp, pp, TokenKind.POSTPOSITION, 
+                    (start_char + len(piece[:-len(pp)]), end_char)
+                )
+            ] 
+            for pp in sorted_postpositions 
+            if piece.endswith(pp) 
+            and len(piece) > len(pp) 
+            and piece[:-len(pp)].lower() in temporal_roots),
             None
         )
         
@@ -101,5 +136,9 @@ def lex(text: str) -> List[Token]:
     return [
         token 
         for i, piece in enumerate(pieces) if piece 
-        for token in _process_piece(piece, accumulated_offsets[i], accumulated_offsets[i+1])
+        for token in _process_piece(
+            piece, 
+            accumulated_offsets[i], 
+            accumulated_offsets[i+1]
+        )
     ]

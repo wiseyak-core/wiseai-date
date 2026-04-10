@@ -2,6 +2,17 @@ import json
 from typing import List
 from library.scanner.types import ResolvedDate, ScanResult
 
+# JSON field name constants 
+_FIELD_TEXT = "text"
+_FIELD_NORMALIZED = "normalized"
+_FIELD_TYPE = "type"
+_FIELD_CALENDAR = "calendar"
+_FIELD_YEAR = "year"
+_FIELD_MONTH = "month"
+_FIELD_DAY = "day"
+_FIELD_START = "start"
+_FIELD_END = "end"
+
 def build_scan_result(original_text: str, extractions: List[ResolvedDate]) -> ScanResult:
     """Takes resolved extractions and performs span-based replacement on original text."""
     
@@ -18,19 +29,19 @@ def build_scan_result(original_text: str, extractions: List[ResolvedDate]) -> Sc
         normalized_chars[start:end] = list(iso_str)
         
         json_dict = {
-            "text": original_text[start:end].strip(),
-            "normalized": {
-                "type": extraction.type,
-                "calendar": extraction.calendar,
-                "year": extraction.year,
-                "month": extraction.month,
+            _FIELD_TEXT: original_text[start:end].strip(),
+            _FIELD_NORMALIZED: {
+                _FIELD_TYPE: extraction.type,
+                _FIELD_CALENDAR: extraction.calendar,
+                _FIELD_YEAR: extraction.year,
+                _FIELD_MONTH: extraction.month,
             }
         }
         if extraction.day is not None:
-             json_dict["normalized"]["day"] = extraction.day
+             json_dict[_FIELD_NORMALIZED][_FIELD_DAY] = extraction.day
              
-        json_dict["normalized"]["start"] = extraction.start
-        json_dict["normalized"]["end"] = extraction.end
+        json_dict[_FIELD_NORMALIZED][_FIELD_START] = extraction.start
+        json_dict[_FIELD_NORMALIZED][_FIELD_END] = extraction.end
         
         json_extractions.insert(0, json_dict)
         
