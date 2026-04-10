@@ -208,6 +208,8 @@ class FSMScanner:
                 _handle_idle(token, i)
             elif self.state.mode == _MODE_COLLECTING:
                 _handle_collecting(token)
+            else:
+                raise ValueError(f"Unknown FSM mode: {self.state.mode}")
 
         if self.state.mode == _MODE_COLLECTING:
             self._emit_current()

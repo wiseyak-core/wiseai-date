@@ -22,10 +22,9 @@ def scan_text(text: str, ref_date: Optional[Union[datetime.date, str]] = None) -
     scanner = FSMScanner()
     date_expressions = scanner.scan(tokens)
     
-    resolved_dates = []
-    for expr in date_expressions:
-        rd = resolve(expr, actual_ref)
-        if rd is not None:
-            resolved_dates.append(rd)
+    resolved_dates = [
+        rd for expr in date_expressions
+        if (rd := resolve(expr, actual_ref)) is not None
+    ]
             
     return build_scan_result(text, resolved_dates)
