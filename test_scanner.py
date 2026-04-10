@@ -261,43 +261,42 @@ class TestScannerJSONL(unittest.TestCase):
     """
     def test_scanner_from_jsonl(self):
         jsonl_path = os.path.join(os.path.dirname(__file__), "scanner_cases.jsonl")
-
         with open(jsonl_path, "r", encoding="utf-8") as f:
             cases = [json.loads(line) for line in f if line.strip()]
-
         for case_index, case in enumerate(cases):
             with self.subTest(case_index=case_index, input_text=case["input"]):
                 result = scan_text(case["input"], ref_date=case["ref_date"])
-
+                self._assert_normalized(result, case)
+                self._assert_extractions(result, case)
+    def _assert_normalized(self, result, case):
+        """Assert normalized text matches expected."""
+        self.assertEqual(
+            result.normalized_text,
+            case["expected_normalized"],
+            f"Normalized text mismatch for: '{case['input']}'"
+        )
+    def _assert_extractions(self, result, case):
+        """Assert extraction count and fields match expected."""
+        expected = case["expected_extractions"]
+        self.assertEqual(
+            len(result.extractions),
+            len(expected),
+            f"Extraction count mismatch for: '{case['input']}'"
+        )
+        for idx, expected_ext in enumerate(expected):
+            actual = result.extractions[idx]
+            self.assertEqual(
+                actual["text"],
+                expected_ext["text"],
+                f"Text mismatch at index {idx} for: '{case['input']}'"
+            )
+            for field, value in expected_ext.items():
+                if field == "text":
+                    continue
                 self.assertEqual(
-                    result.normalized_text,
-                    case["expected_normalized"],
-                    f"Normalized text mismatch for: '{case['input']}'"
+                    actual.get(field), value,
+                    f"Field '{field}' mismatch at extraction {idx} for: '{case['input']}'"
                 )
-
-                self.assertEqual(
-                    len(result.extractions),
-                    len(case["expected_extractions"]),
-                    f"Extraction count mismatch for: '{case['input']}'"
-                )
-
-                for extraction_index, expected_extraction in enumerate(case["expected_extractions"]):
-                    actual_extraction = result.extractions[extraction_index]
-
-                    self.assertEqual(
-                        actual_extraction["text"],
-                        expected_extraction["text"],
-                        f"Extraction text mismatch at index {extraction_index} for: '{case['input']}'"
-                    )
-
-                    for field, expected_value in expected_extraction.items():
-                        if field == "text":
-                            continue
-                        self.assertEqual(
-                            actual_extraction.get(field),
-                            expected_value,
-                            f"Field '{field}' mismatch at extraction {extraction_index} for: '{case['input']}'"
-                        )
 
 
 if __name__ == '__main__':

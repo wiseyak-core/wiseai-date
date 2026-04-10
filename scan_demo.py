@@ -20,9 +20,17 @@ Examples to try:
     पर्सि आउनुस्
 """
 import json
-import sys
 from library.scanner import scan_text
 
+_EXIT_COMMANDS = {"exit", "quit", "q"}
+
+def _read_input():
+    """Read a line from stdin, returning None on EOF/interrupt."""
+    try:
+        return input(">> ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print("\nBye!")
+        return None
 
 def main():
     print("=" * 60)
@@ -32,31 +40,20 @@ def main():
     print("=" * 60)
     print()
 
-    while True:
-        try:
-            user_input = input(">> ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\nBye!")
-            break
-
-        if user_input.lower() in {"exit", "quit", "q"}:
+    for user_input in iter(_read_input, None):
+        if user_input.lower() in _EXIT_COMMANDS:
             print("Bye!")
             break
-
         if not user_input:
             continue
-
         result = scan_text(user_input)
-
         print(f"\n  Original:   {result.original_text}")
         print(f"  Normalized: {result.normalized_text}")
         print(f"  Extractions ({len(result.extractions)}):")
-
         if not result.extractions:
             print("    (none)")
         else:
             print(json.dumps(result.extractions, indent=4, ensure_ascii=False))
-
         print()
 
 
