@@ -12,6 +12,7 @@ _FIELD_MONTH = "month"
 _FIELD_DAY = "day"
 _FIELD_START = "start"
 _FIELD_END = "end"
+_FIELD_DATE = "date"
 
 def _build_extraction_json(
     extraction: ResolvedDate, original_text: str
@@ -29,8 +30,13 @@ def _build_extraction_json(
     }
     if extraction.day is not None:
         json_dict[_FIELD_NORMALIZED][_FIELD_DAY] = extraction.day
-    json_dict[_FIELD_NORMALIZED][_FIELD_START] = extraction.start
-    json_dict[_FIELD_NORMALIZED][_FIELD_END] = extraction.end
+
+    if extraction.start == extraction.end:
+        json_dict[_FIELD_NORMALIZED][_FIELD_DATE] = extraction.start
+    else:
+        json_dict[_FIELD_NORMALIZED][_FIELD_START] = extraction.start
+        json_dict[_FIELD_NORMALIZED][_FIELD_END] = extraction.end
+
     return json_dict
 
 def build_scan_result(original_text: str, extractions: List[ResolvedDate]) -> ScanResult:
