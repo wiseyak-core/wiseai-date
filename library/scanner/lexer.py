@@ -99,7 +99,7 @@ def lex(text: str) -> List[Token]:
         *_TEMPORAL_UNITS.keys(), *_RELATIVE_ADVERBS.keys(),
         *_BS_MONTH_ALIASES.keys(), *_AD_MONTH_ALIASES.keys(),
         *_WEEKDAY_ALIASES.keys(), *_ORDINALS.keys(),
-        *_KEYWORD_TARIKH, *_KEYWORD_GATE
+        *_KEYWORD_TARIKH, *_KEYWORD_GATE, *_DIRECTION_WORDS.keys()
     }
 
     def _process_piece(piece: str, start_char: int, end_char: int) -> List[Token]:

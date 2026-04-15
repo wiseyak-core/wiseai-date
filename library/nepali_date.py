@@ -485,54 +485,54 @@ _AD_MONTH_ALIASES: dict[str, int] = {
         # January
         (1, (
             "january", "jan", "1", "januray", "januery", "janaury", "janury",
-            "janwari", "janwary"
+            "janwari", "janwary", "जनवरी", "जनावरी"
         )),
         # February
         (2, (
             "february", "feb", "2", "febuary", "feburary", "februray",
-            "febrary", "febrari"
+            "febrary", "febrari", "फेब्रुअरी", "फेब्रूअरी"
         )),
         # March
         (3, (
-            "march", "mar", "3", "marck", "mach", "marsch"
+            "march", "mar", "3", "marck", "mach", "marsch", "मार्च"
         )),
         # April
         (4, (
-            "april", "apr", "4", "apirl", "aprl", "aprill", "apryl"
+            "april", "apr", "4", "apirl", "aprl", "aprill", "apryl", "अप्रिल", "अप्रील"
         )),
         # May
         (5, (
-            "may", "5", "maay", "maye", "mey"
+            "may", "5", "maay", "maye", "mey", "मे", "मेई"
         )),
         # June
         (6, (
-            "june", "jun", "6", "juune", "juen", "joon"
+            "june", "jun", "6", "juune", "juen", "joon", "जुन", "जून"
         )),
         # July
         (7, (
-            "july", "jul", "7", "juuly", "jully", "julye", "julai"
+            "july", "jul", "7", "juuly", "jully", "julye", "julai", "जुलाई", "जूलाई", "जुलाइ", "जुलाइ"
         )),
         # August
         (8, (
             "august", "aug", "8", "agast", "agust", "augist", "augest",
-            "augustt"
+            "augustt", "अगस्ट", "अगश्ट", "अगष्ट"
         )),
         # September
         (9, (
             "september", "sep", "sept", "9", "setember", "septmber",
-            "septembar", "septembe"
+            "septembar", "septembe", "सेप्टेम्बर"
         )),
         # October
         (10, (
-            "october", "oct", "10", "octber", "ocober", "octobar", "octobr"
+            "october", "oct", "10", "octber", "ocober", "octobar", "octobr", "अक्टोबर"
         )),
         # November
         (11, (
-            "november", "nov", "11", "novmber", "noveber", "novembar", "novembr"
+            "november", "nov", "11", "novmber", "noveber", "novembar", "novembr", "नोभेम्बर"
         )),
         # December
         (12, (
-            "december", "dec", "12", "decmber", "deceber", "decembar", "decembr"
+            "december", "dec", "12", "decmber", "deceber", "decembar", "decembr", "डिसेम्बर"
         ))
     ]
     for alias in aliases
