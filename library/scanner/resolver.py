@@ -252,10 +252,10 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
             # Middle of year is Kartik (7) or July (7)
             if is_bs:
                 return bs_month_to_ad_range(
-                    _NARROW_MONTH_MIDDLE, current_bs_year()
+                    _NARROW_MONTH_MIDDLE, ad_to_bs(ref_date)[0]
                 )
             return ad_month_to_bs_range(
-                _NARROW_MONTH_MIDDLE, datetime.date.today().year
+                _NARROW_MONTH_MIDDLE, ref_date.year
             )
         yr = _resolve_year_relative(ref_date, is_bs, offset)
         return _apply_boundary(yr, scope.modifier) or yr
