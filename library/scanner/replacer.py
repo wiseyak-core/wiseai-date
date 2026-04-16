@@ -1,5 +1,6 @@
 import json
 from typing import List
+from dataclasses import asdict
 from library.scanner.types import ResolvedDate, ScanResult
 
 # JSON field name constants 
@@ -14,30 +15,25 @@ _FIELD_START = "start"
 _FIELD_END = "end"
 _FIELD_DATE = "date"
 
-def _build_extraction_json(
-    extraction: ResolvedDate, original_text: str
-) -> dict:
-    """Builds a JSON dictionary for a single resolved date extraction."""
+def _build_extraction_json(extraction: ResolvedDate, original_text: str) -> dict:
+    """Builds a JSON dictionary for a single resolved date extraction generically."""
     start, end = extraction.expression.span
-    normalized_data = {
-        _FIELD_TYPE: extraction.type,
-        _FIELD_CALENDAR: extraction.calendar,
-        _FIELD_YEAR: extraction.year,
-        _FIELD_MONTH: extraction.month,
-    }
+    
+    data = asdict(extraction)
+    
+    for key in ["expression", "iso_replacement"]:
+        data.pop(key, None)
+    
+    start_val, end_val = data.pop("start"), data.pop("end")
 
-    if extraction.day is not None:
-        normalized_data[_FIELD_DAY] = extraction.day
-
-    if extraction.start == extraction.end:
-        normalized_data[_FIELD_DATE] = extraction.start
+    if start_val == end_val:
+        data["date"] = start_val
     else:
-        normalized_data[_FIELD_START] = extraction.start
-        normalized_data[_FIELD_END] = extraction.end
-
+        data["start"], data["end"] = start_val, end_val
+        
     return {
-        _FIELD_TEXT: original_text[start:end].strip(),
-        _FIELD_NORMALIZED: normalized_data
+        "text": original_text[start:end].strip(),
+        "normalized": {k: v for k, v in data.items() if v is not None}
     }
 
 def build_scan_result(original_text: str, extractions: List[ResolvedDate]) -> ScanResult:
