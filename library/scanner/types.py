@@ -74,9 +74,12 @@ class ScannerState:
     buffer: List[Token] = field(default_factory=list)
     calendar_signal: Literal["BS", "AD"] = "BS"
     scope_stack: List[ScopeLevel] = field(default_factory=list)
+    default_calendar: Literal["BS", "AD"] = "BS"
 
-    def reset(self) -> None:
+    def reset(self, default_calendar: Optional[Literal["BS", "AD"]] = None) -> None:
+        if default_calendar is not None:
+            self.default_calendar = default_calendar
         self.buffer.clear()
-        self.calendar_signal = "BS"
+        self.calendar_signal = self.default_calendar
         self.scope_stack.clear()
         self.mode = "IDLE"

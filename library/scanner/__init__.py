@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 
 from library.scanner.lexer import lex
 from library.scanner.fsm import FSMScanner
@@ -7,7 +7,7 @@ from library.scanner.resolver import resolve
 from library.scanner.replacer import build_scan_result
 from library.scanner.types import ScanResult
 
-def scan_text(text: str, ref_date: Optional[Union[datetime.date, str]] = None) -> ScanResult:
+def scan_text(text: str, default_calendar: Literal["BS", "AD"] = "BS", ref_date: Optional[Union[datetime.date, str]] = None) -> ScanResult:
     if ref_date is None:
         actual_ref = datetime.date.today()
     elif isinstance(ref_date, str):
@@ -20,7 +20,7 @@ def scan_text(text: str, ref_date: Optional[Union[datetime.date, str]] = None) -
         return build_scan_result(text, [])
         
     scanner = FSMScanner()
-    date_expressions = scanner.scan(tokens)
+    date_expressions = scanner.scan(tokens, default_calendar=default_calendar)
     
     resolved_dates = [
         rd for expr in date_expressions

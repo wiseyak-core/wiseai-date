@@ -2,6 +2,32 @@
 
 This library provides `conversions` and `operations` with `iterators` between Bikram Sambat (BS) and Gregorian (AD) dates. At its core is the `NepaliDateTime` class, a powerful, Java `LocalDateTime`-inspired API for working with Nepali dates and times.
 
+## Installation
+
+Because this is a private repository, you must use a GitHub Personal Access Token (PAT) to install it via pip or uv. 
+
+```bash
+pip install git+https://<YOUR_GITHUB_PAT>@github.com/wiseyak-core/wiseai-date.git
+
+# Or with uv (recommended for speed)
+uv pip install git+https://<YOUR_GITHUB_PAT>@github.com/wiseyak-core/wiseai-date.git
+```
+
+> [!Note]
+> Replace `<YOUR_GITHUB_PAT>` with your actual GitHub Personal Access Token.
+
+### How to get a PAT (Personal Access Token)
+1. Go to your GitHub account **Settings**.
+2. Scroll to the bottom of the left sidebar and click on **Developer settings**.
+3. Click on **Personal access tokens** -> **Tokens (classic)**.
+4. Click **Generate new token (classic)**.
+5. Give it a descriptive Note (e.g., "Python package installer").
+6. **Important:** Under the "Select scopes" section, check the box next to **`repo`** (Full control of private repositories). This is required since the repository is private.
+7. Scroll down and click **Generate token**.
+8. **Copy the generated token** (it will look something like `ghp_XxXxXxXxXxXxXx`). Note: GitHub only shows this to you once!
+
+Once you have your token, you just replace `<YOUR_GITHUB_PAT>` in the URL above with your actual token.
+
 ## `NepaliDateTime`
 
 The `NepaliDateTime` class is a wrapper that internally stores a standard Python UTC/naive `datetime` object, but exposes properties and methods to easily manipulate and display dates in the Bikram Sambat calendar system.

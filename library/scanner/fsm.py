@@ -1,5 +1,5 @@
 import copy
-from typing import List, Set
+from typing import List, Set, Literal
 
 from library.scanner.types import (
     ScannerState, 
@@ -11,6 +11,8 @@ from library.scanner.vocabulary import (
     _NON_TEMPORAL_RIGHT, 
     _RANGE_BRIDGES
 )
+
+from library.nepali_date import _AD_MONTH_ALIASES, _BS_MONTH_ALIASES
 
 # ── FSM Mode Constants ──
 _MODE_IDLE = "IDLE"
@@ -146,8 +148,8 @@ class FSMScanner:
                 return True
         return False
 
-    def scan(self, tokens: List[Token]) -> List[DateExpression]:
-        self.state.reset()
+    def scan(self, tokens: List[Token], default_calendar: Literal["BS", "AD"] = "BS") -> List[DateExpression]:
+        self.state.reset(default_calendar)
         self.extractions.clear()
         
         # State transitions mapping
@@ -158,6 +160,15 @@ class FSMScanner:
                 distance, targets = _LOOKAHEAD_TRIGGERS[token.kind]
                 if self._check_lookahead(tokens, i, distance, targets):
                     return _start_collecting(token)
+
+        def _update_calendar_signal(token: Token):
+            match token.kind:
+                case TokenKind.TARIKH:
+                    self.state.calendar_signal = _CAL_AD
+                case TokenKind.MONTH_NAME if token.norm in _AD_MONTH_ALIASES:
+                    self.state.calendar_signal = _CAL_AD
+                case TokenKind.MONTH_NAME if token.norm in _BS_MONTH_ALIASES:
+                    self.state.calendar_signal = "BS"
 
         def _handle_collecting(token: Token):
             # 1. Guard against blocklists
@@ -186,6 +197,7 @@ class FSMScanner:
                 )
                 if is_bridge:
                     self.state.buffer.append(token)
+                    _update_calendar_signal(token)
                     return
                         
                 self._emit_current()
@@ -193,14 +205,12 @@ class FSMScanner:
                 
             # 4. Standard Extension
             self.state.buffer.append(token)
-            if token.kind == TokenKind.TARIKH:
-                self.state.calendar_signal = _CAL_AD
+            _update_calendar_signal(token)
 
         def _start_collecting(token: Token):
             self.state.mode = _MODE_COLLECTING
             self.state.buffer.append(token)
-            if token.kind == TokenKind.TARIKH:
-                self.state.calendar_signal = _CAL_AD
+            _update_calendar_signal(token)
 
         # FSM Execution
         for i, token in enumerate(tokens):

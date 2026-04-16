@@ -1,11 +1,11 @@
 import datetime
-from typing import List, Optional, Callable, Dict
+from typing import List, Optional
 
 from library.nepali_date import (
     ad_to_bs, bs_to_ad,
     ad_month_to_bs_range, bs_month_to_ad_range,
     DateRange, _PHRASE_RESOLVERS, _resolve_month_relative, _resolve_year_relative,
-    current_bs_year
+    current_bs_year, NepaliDateTime
 )
 from library.scanner.types import (
     DateExpression, 
@@ -15,6 +15,7 @@ from library.scanner.types import (
     Token
 )
 from library.scanner.lexer import _normalize_numeral
+from library.scanner.vocabulary import _RANGE_BRIDGES, _DEVANAGARI_DIGIT_MAP
 
 # ── Unit Constants ──
 _UNIT_YEAR = "year"
@@ -129,13 +130,8 @@ def _resolve_iso_date(
 ) -> ResolvedDate:
     norm_val = _normalize_numeral(token.norm)
     y, m, d = (int(x) for x in norm_val.split('-'))
-    start_str = f"{y:04d}-{m:02d}-{d:02d}"
-    return ResolvedDate(
-        expression=expr, 
-        calendar=expr.calendar_signal, 
-        type=_TYPE_DAY,
-        year=y, month=m, day=d, start=start_str, end=start_str, iso_replacement=token.text
-    )
+    ad_date = bs_to_ad(y, m, d) if is_bs else datetime.date(y, m, d)
+    return _build_resolved(expr, DateRange(ad_date, ad_date), is_bs, _TYPE_DAY)
 
 def _resolve_relative_adverb(
     expr: DateExpression, 
@@ -167,7 +163,6 @@ def _resolve_directional(
     unit, direction = unit_t.value, dir_t.value
     def get_exact_month(ref: datetime.date, count: int, sign: int, bs: bool):
         if bs:
-            from library.nepali_date import NepaliDateTime
             target = (
                 NepaliDateTime.from_ad(ref.year, ref.month, ref.day)
                 .plus_months(count * sign).to_local_date()
@@ -195,7 +190,6 @@ def _resolve_directional(
 
     def get_exact_year(ref: datetime.date, count: int, sign: int, bs: bool):
         if bs:
-            from library.nepali_date import NepaliDateTime
             target = (
                 NepaliDateTime.from_ad(ref.year, ref.month, ref.day)
                 .plus_years(count * sign).to_local_date()
@@ -252,10 +246,10 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
             # Middle of year is Kartik (7) or July (7)
             if is_bs:
                 return bs_month_to_ad_range(
-                    _NARROW_MONTH_MIDDLE, current_bs_year()
+                    _NARROW_MONTH_MIDDLE, ad_to_bs(ref_date)[0]
                 )
             return ad_month_to_bs_range(
-                _NARROW_MONTH_MIDDLE, datetime.date.today().year
+                _NARROW_MONTH_MIDDLE, ref_date.year
             )
         yr = _resolve_year_relative(ref_date, is_bs, offset)
         return _apply_boundary(yr, scope.modifier) or yr
@@ -272,12 +266,17 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
     def get_month_explicit():
         m_token = next((t for t in tokens if t.kind == TokenKind.MONTH_NAME), None)
         if not m_token: return None
+        
+        # Look for a 4-digit year token
+        year_token = next((t for t in tokens if t.kind == TokenKind.NUMBER and isinstance(t.value, int) and 1900 <= t.value <= 2200), None)
+        year_val_bs = year_token.value if year_token else None
+        year_val_ad = year_token.value if year_token else ref_date.year
+        
         if is_bs:
-            from library.nepali_date import ad_to_bs
-            yr = ad_to_bs(ref_date)[0]
+            yr = year_val_bs if year_val_bs else ad_to_bs(ref_date)[0]
             dr = bs_month_to_ad_range(m_token.value, yr)
         else:
-            dr = ad_month_to_bs_range(m_token.value, ref_date.year)
+            dr = ad_month_to_bs_range(m_token.value, year_val_ad)
             
         return _apply_boundary(dr, scope.modifier) or dr
 
@@ -362,7 +361,6 @@ def _get_nth_day(dr: DateRange, n: int) -> DateRange:
 # ── Main Resolver Entrypoint ── #
 
 def _resolve_explicit_range(expr: DateExpression, ref_date: datetime.date, is_bs: bool) -> Optional[ResolvedDate]:
-    from library.scanner.vocabulary import _RANGE_BRIDGES
     
     # Look for a bridge token
     bridge_idx = next(
@@ -400,7 +398,6 @@ def _resolve_explicit_range(expr: DateExpression, ref_date: datetime.date, is_bs
         case (None, _, _) | (_, None, _):
             return None
         case (left, right, True):
-            from library.nepali_date import bs_to_ad
             st_ad, en_ad = minmax(
                 bs_to_ad(*[int(x) for x in left.start.split('-')]),
                 bs_to_ad(*[int(x) for x in right.end.split('-')])
@@ -455,7 +452,6 @@ def resolve(expr: DateExpression, ref_date: datetime.date) -> Optional[ResolvedD
 # ── Result Builder ── #
 
 def _build_resolved(expr: DateExpression, dr: DateRange, is_bs: bool, unit: str) -> ResolvedDate:
-    from library.scanner.vocabulary import _DEVANAGARI_DIGIT_MAP
     
     # Extract structural dates
     if is_bs:
@@ -495,6 +491,10 @@ def _build_resolved(expr: DateExpression, dr: DateRange, is_bs: bool, unit: str)
     # Devanagari mirroring
     if is_bs and any("\u0900" <= c <= "\u097F" for t in expr.tokens for c in t.text):
         iso_repl = iso_repl.translate(_DEVANAGARI_DIGIT_MAP)
+
+    # Wrap BS dates in <BS> tag for calendar identification; AD stays plain ISO
+    if is_bs:
+        iso_repl = f"<BS>{iso_repl}</BS>"
 
     return ResolvedDate(
         expression=expr, calendar="BS" if is_bs else "AD", type=result_type,
