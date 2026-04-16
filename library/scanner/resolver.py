@@ -251,8 +251,9 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
         if scope.modifier == _MOD_MIDDLE_OF:
             # Middle of year is Kartik (7) or July (7)
             if is_bs:
+                bs_year, _, _ = ad_to_bs(ref_date)
                 return bs_month_to_ad_range(
-                    _NARROW_MONTH_MIDDLE, ad_to_bs(ref_date)[0]
+                    _NARROW_MONTH_MIDDLE, bs_year
                 )
             return ad_month_to_bs_range(
                 _NARROW_MONTH_MIDDLE, ref_date.year
