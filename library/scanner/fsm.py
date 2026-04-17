@@ -52,7 +52,8 @@ _LOOKAHEAD_TRIGGERS = {
         2, 
         frozenset({
             TokenKind.TEMPORAL_UNIT, 
-            TokenKind.DIRECTION
+            TokenKind.DIRECTION,
+            TokenKind.MONTH_NAME
         })
     ),
     TokenKind.TEMPORAL_UNIT: (
@@ -196,6 +197,12 @@ class FSMScanner:
                          or prev.text in _RANGE_BRIDGES)
                 )
                 if is_bridge:
+                    self.state.buffer.append(token)
+                    _update_calendar_signal(token)
+                    return
+                
+                # Bypass swap if a month name follows a number (e.g. 12 January)
+                if token.kind == TokenKind.MONTH_NAME and prev and prev.kind == TokenKind.NUMBER:
                     self.state.buffer.append(token)
                     _update_calendar_signal(token)
                     return
