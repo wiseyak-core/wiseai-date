@@ -81,7 +81,8 @@ def _build_scope_stack(tokens: List[Token]) -> List[ScopeLevel]:
 
     def _flush_scope(unit_val: str):
         modifier = current_state["modifier"]
-        ordinal = current_state["ordinal"]
+        # Prefer ordinal if set, otherwise use current number (e.g. for Day in "Jan 12")
+        ordinal = current_state["ordinal"] if current_state["ordinal"] is not None else current_state["number"]
         number = current_state["number"]
         # Default modifier if entirely unconstrained for the root scope
         if not any(current_state.values()) and not stack and token.kind == TokenKind.TEMPORAL_UNIT:
@@ -103,9 +104,14 @@ def _build_scope_stack(tokens: List[Token]) -> List[ScopeLevel]:
                 )
         ),
         TokenKind.ORDINAL: lambda t: current_state.update(ordinal=t.value),
-        TokenKind.NUMBER: lambda t: current_state.update(number=t.value),
+        # Only capture numbers <= 32 as potential days (ignores years like 2024)
+        TokenKind.NUMBER: lambda t: current_state.update(number=t.value) if (isinstance(t.value, int) and t.value <= 32) else None,
         TokenKind.TEMPORAL_UNIT: lambda t: _flush_scope(t.value),
-        TokenKind.MONTH_NAME: lambda t: _flush_scope(_UNIT_MONTH_EXPLICIT),
+        # Flush a DAY scope if a number is pending before processing the month
+        TokenKind.MONTH_NAME: lambda t: (
+            _flush_scope(_UNIT_DAY) if (current_state["number"] is not None or current_state["ordinal"] is not None) else None,
+            _flush_scope(_UNIT_MONTH_EXPLICIT)
+        )[-1],
         TokenKind.WEEKDAY_NAME: lambda t: _flush_scope(_UNIT_WEEKDAY_EXPLICIT),
         TokenKind.TARIKH: lambda t: _flush_scope(_UNIT_DAY)
     }

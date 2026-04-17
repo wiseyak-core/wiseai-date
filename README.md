@@ -4,29 +4,20 @@ This library provides `conversions` and `operations` with `iterators` between Bi
 
 ## Installation
 
-Because this is a private repository, you must use a GitHub Personal Access Token (PAT) to install it via pip or uv. 
+To install this private library without using personal access tokens (PATs), we recommend using **SSH**.
 
 ```bash
-pip install git+https://<YOUR_GITHUB_PAT>@github.com/wiseyak-core/wiseai-date.git
+# Install via SSH
+pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git
 
 # Or with uv (recommended for speed)
-uv pip install git+https://<YOUR_GITHUB_PAT>@github.com/wiseyak-core/wiseai-date.git
+uv pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git
 ```
 
-> [!Note]
-> Replace `<YOUR_GITHUB_PAT>` with your actual GitHub Personal Access Token.
-
-### How to get a PAT (Personal Access Token)
-1. Go to your GitHub account **Settings**.
-2. Scroll to the bottom of the left sidebar and click on **Developer settings**.
-3. Click on **Personal access tokens** -> **Tokens (classic)**.
-4. Click **Generate new token (classic)**.
-5. Give it a descriptive Note (e.g., "Python package installer").
-6. **Important:** Under the "Select scopes" section, check the box next to **`repo`** (Full control of private repositories). This is required since the repository is private.
-7. Scroll down and click **Generate token**.
-8. **Copy the generated token** (it will look something like `ghp_XxXxXxXxXxXxXx`). Note: GitHub only shows this to you once!
-
-Once you have your token, you just replace `<YOUR_GITHUB_PAT>` in the URL above with your actual token.
+### Pre-requisites for SSH
+1.  **Generate an SSH key** on your local machine if you don't have one (`ssh-keygen`).
+2.  **Add your public key to GitHub**: Go to your [GitHub SSH Settings](https://github.com/settings/keys) and add your `.pub` key.
+3.  **For Production**: Ask your repository administrator to add your server's public key as a **Deploy Key** in the repository settings.
 
 ## `NepaliDateTime`
 

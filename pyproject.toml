@@ -8,6 +8,8 @@ version = "0.1.0"
 description = "Date utility for Nepali context."
 readme = "README.md"
 requires-python = ">=3.12"
+license = { text = "Proprietary" }
+authors = [{ name = "WiseYak Core" }]
 dependencies = []
 
 [project.optional-dependencies]
