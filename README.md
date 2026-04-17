@@ -19,6 +19,74 @@ uv pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git
 2.  **Add your public key to GitHub**: Go to your [GitHub SSH Settings](https://github.com/settings/keys) and add your `.pub` key.
 3.  **For Production**: Ask your repository administrator to add your server's public key as a **Deploy Key** in the repository settings.
 
+### Pinning to a Specific Version
+
+```bash
+# Pin to a release tag
+pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git@v0.1.0
+
+# Pin to a branch
+pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git@main
+```
+
+### Adding as a Project Dependency
+
+**pyproject.toml (PEP 621):**
+
+```toml
+[project]
+dependencies = [
+    "wiseai-date @ git+ssh://git@github.com/wiseyak-core/wiseai-date.git",
+]
+```
+
+**requirements.txt:**
+
+```
+wiseai-date @ git+ssh://git@github.com/wiseyak-core/wiseai-date.git
+```
+
+Then install as usual (`pip install .`, `uv sync`, etc.).
+
+### Installing Inside Docker
+
+Docker does not have access to host SSH keys by default. Use **BuildKit SSH agent forwarding** so your key is never copied into the image.
+
+**Dockerfile** — add `--mount=type=ssh` to the install step:
+
+```dockerfile
+# Install git + ssh (required for cloning private repos)
+RUN apt-get update && apt-get install -y --no-install-recommends git openssh-client && \
+    rm -rf /var/lib/apt/lists/*
+
+# Trust github.com host key
+RUN mkdir -p /root/.ssh && ssh-keyscan github.com >> /root/.ssh/known_hosts
+
+# Install dependencies with SSH forwarding
+RUN --mount=type=ssh pip install .
+```
+
+**Build** — forward your SSH agent:
+
+```bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+docker build --ssh default -t my-app .
+```
+
+**docker-compose.yaml:**
+
+```yaml
+services:
+  app:
+    build:
+      context: .
+      ssh:
+        - default
+```
+
+Then run `docker compose up --build` with your SSH agent active.
+
 ## `NepaliDateTime`
 
 The `NepaliDateTime` class is a wrapper that internally stores a standard Python UTC/naive `datetime` object, but exposes properties and methods to easily manipulate and display dates in the Bikram Sambat calendar system.
