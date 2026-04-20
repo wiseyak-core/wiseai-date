@@ -36,4 +36,10 @@ dev = [
 # Explicitly tell setuptools to package the "library" folder
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["library*"]
+include = ["wisedate*"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-xdist>=3.8.0",
+]

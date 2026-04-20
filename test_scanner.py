@@ -2,7 +2,7 @@ import unittest
 import json
 import os
 import datetime
-from library.scanner import scan_text
+from wisedate.scanner import scan_text
 
 
 class TestScannerRelativeAdverbs(unittest.TestCase):

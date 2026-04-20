@@ -1,13 +1,13 @@
 import re
 from typing import List, Callable, Dict, Any, Tuple
 
-from library.nepali_date import (
+from wisedate.nepali_date import (
     _BS_MONTH_ALIASES, 
     _AD_MONTH_ALIASES, 
     _WEEKDAY_ALIASES
 )
-from library.scanner.types import Token, TokenKind
-from library.scanner.vocabulary import (
+from wisedate.scanner.types import Token, TokenKind
+from wisedate.scanner.vocabulary import (
     _TEMPORAL_UNITS, 
     _TEMPORAL_MODIFIERS, 
     _ORDINALS, 

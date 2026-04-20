@@ -1,5 +1,5 @@
 import datetime
-from library.nepali_date import (
+from wisedate.nepali_date import (
     bs_to_ad,
     ad_to_bs,
     NepaliDateTime,

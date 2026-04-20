@@ -1,11 +1,11 @@
 import datetime
 from typing import Optional, Union, Literal
 
-from library.scanner.lexer import lex
-from library.scanner.fsm import FSMScanner
-from library.scanner.resolver import resolve
-from library.scanner.replacer import build_scan_result
-from library.scanner.types import ScanResult
+from wisedate.scanner.lexer import lex
+from wisedate.scanner.fsm import FSMScanner
+from wisedate.scanner.resolver import resolve
+from wisedate.scanner.replacer import build_scan_result
+from wisedate.scanner.types import ScanResult
 
 def scan_text(text: str, default_calendar: Literal["BS", "AD"] = "BS", ref_date: Optional[Union[datetime.date, str]] = None) -> ScanResult:
     if ref_date is None:

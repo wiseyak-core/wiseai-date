@@ -1,18 +1,18 @@
 import copy
 from typing import List, Set, Literal
 
-from library.scanner.types import (
+from wisedate.scanner.types import (
     ScannerState, 
     DateExpression, 
     TokenKind, 
     Token
 )
-from library.scanner.vocabulary import (
+from wisedate.scanner.vocabulary import (
     _NON_TEMPORAL_RIGHT, 
     _RANGE_BRIDGES
 )
 
-from library.nepali_date import _AD_MONTH_ALIASES, _BS_MONTH_ALIASES
+from wisedate.nepali_date import _AD_MONTH_ALIASES, _BS_MONTH_ALIASES
 
 # ── FSM Mode Constants ──
 _MODE_IDLE = "IDLE"
