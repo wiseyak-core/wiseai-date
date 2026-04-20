@@ -4,18 +4,33 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wiseai-date"
-version = "0.1.0"
-description = "Date utility for Nepali context."
+version = "0.1.1"
+description = "Date utility for Nepali context (AD/BS conversion, formatting, and grouping)."
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "Proprietary" }
-authors = [{ name = "WiseYak Core" }]
+license = { text = "MIT" }
+authors = [{ name = "WiseYak Core", email = "info@wiseyak.com" }]
+classifiers = [
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/wiseyak-core/wiseai-date"
+Repository = "https://github.com/wiseyak-core/wiseai-date"
+Issues = "https://github.com/wiseyak-core/wiseai-date/issues"
 
 [project.optional-dependencies]
 dev = [
     "pytest>=9.0.0",
-    "pytest-xdist>=3.0.0"
+    "pytest-xdist>=3.0.0",
+    "build",
+    "twine",
+    "uv"
 ]
 
 # Explicitly tell setuptools to package the "library" folder

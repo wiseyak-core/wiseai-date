@@ -4,21 +4,53 @@ This library provides `conversions` and `operations` with `iterators` between Bi
 
 ## Installation
 
-To install this private library without using personal access tokens (PATs), we recommend using **SSH**.
+You can install the library directly from PyPI:
 
 ```bash
-# Install via SSH
-pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git
+pip install wiseai-date
 
 # Or with uv (recommended for speed)
-uv pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git
+uv pip install wiseai-date
 ```
 
-### Pre-requisites for SSH
-1.  **Generate an SSH key** on your local machine if you don't have one (`ssh-keygen`).
-2.  **Add your public key to GitHub**: Go to your [GitHub SSH Settings](https://github.com/settings/keys) and add your `.pub` key.
-3.  **For Production**: Ask your repository administrator to add your server's public key as a **Deploy Key** in the repository settings.
+### Installing from Source (GitHub)
+If you need the latest development version:
 
+```bash
+# Via HTTPS
+pip install git+https://github.com/wiseyak-core/wiseai-date.git
+
+# Via SSH (if you have keys configured)
+pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git
+```
+
+### Adding as a Project Dependency
+
+**pyproject.toml (PEP 621):**
+
+```toml
+[project]
+dependencies = [
+    "wiseai-date",
+]
+```
+
+**requirements.txt:**
+
+```
+wiseai-date
+```
+
+### Installing Inside Docker
+
+Since this is now a public package, you can install it normally in your `Dockerfile`:
+
+```dockerfile
+# No special SSH forwarding required
+RUN pip install wiseai-date
+```
+
+>>>>>>> Stashed changes
 ## `NepaliDateTime`
 
 The `NepaliDateTime` class is a wrapper that internally stores a standard Python UTC/naive `datetime` object, but exposes properties and methods to easily manipulate and display dates in the Bikram Sambat calendar system.
