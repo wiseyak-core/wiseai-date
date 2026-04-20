@@ -50,7 +50,6 @@ Since this is now a public package, you can install it normally in your `Dockerf
 RUN pip install wiseai-date
 ```
 
->>>>>>> Stashed changes
 ## `NepaliDateTime`
 
 The `NepaliDateTime` class is a wrapper that internally stores a standard Python UTC/naive `datetime` object, but exposes properties and methods to easily manipulate and display dates in the Bikram Sambat calendar system.
