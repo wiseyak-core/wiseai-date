@@ -4,29 +4,24 @@ This library provides `conversions` and `operations` with `iterators` between Bi
 
 ## Installation
 
-To install this private library without using personal access tokens (PATs), we recommend using **SSH**.
+You can install the library directly from PyPI:
 
 ```bash
-# Install via SSH
-pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git
+pip install wiseai-date
 
 # Or with uv (recommended for speed)
-uv pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git
+uv pip install wiseai-date
 ```
 
-### Pre-requisites for SSH
-1.  **Generate an SSH key** on your local machine if you don't have one (`ssh-keygen`).
-2.  **Add your public key to GitHub**: Go to your [GitHub SSH Settings](https://github.com/settings/keys) and add your `.pub` key.
-3.  **For Production**: Ask your repository administrator to add your server's public key as a **Deploy Key** in the repository settings.
-
-### Pinning to a Specific Version
+### Installing from Source (GitHub)
+If you need the latest development version:
 
 ```bash
-# Pin to a release tag
-pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git@v0.1.0
+# Via HTTPS
+pip install git+https://github.com/wiseyak-core/wiseai-date.git
 
-# Pin to a branch
-pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git@main
+# Via SSH (if you have keys configured)
+pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git
 ```
 
 ### Adding as a Project Dependency
@@ -36,56 +31,24 @@ pip install git+ssh://git@github.com/wiseyak-core/wiseai-date.git@main
 ```toml
 [project]
 dependencies = [
-    "wiseai-date @ git+ssh://git@github.com/wiseyak-core/wiseai-date.git",
+    "wiseai-date",
 ]
 ```
 
 **requirements.txt:**
 
 ```
-wiseai-date @ git+ssh://git@github.com/wiseyak-core/wiseai-date.git
+wiseai-date
 ```
-
-Then install as usual (`pip install .`, `uv sync`, etc.).
 
 ### Installing Inside Docker
 
-Docker does not have access to host SSH keys by default. Use **BuildKit SSH agent forwarding** so your key is never copied into the image.
-
-**Dockerfile** — add `--mount=type=ssh` to the install step:
+Since this is now a public package, you can install it normally in your `Dockerfile`:
 
 ```dockerfile
-# Install git + ssh (required for cloning private repos)
-RUN apt-get update && apt-get install -y --no-install-recommends git openssh-client && \
-    rm -rf /var/lib/apt/lists/*
-
-# Trust github.com host key
-RUN mkdir -p /root/.ssh && ssh-keyscan github.com >> /root/.ssh/known_hosts
-
-# Install dependencies with SSH forwarding
-RUN --mount=type=ssh pip install .
+# No special SSH forwarding required
+RUN pip install wiseai-date
 ```
-
-**Build** — forward your SSH agent:
-
-```bash
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_ed25519
-docker build --ssh default -t my-app .
-```
-
-**docker-compose.yaml:**
-
-```yaml
-services:
-  app:
-    build:
-      context: .
-      ssh:
-        - default
-```
-
-Then run `docker compose up --build` with your SSH agent active.
 
 ## `NepaliDateTime`
 

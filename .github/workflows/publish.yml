@@ -1,4 +1,4 @@
-name: Automated Private Release
+name: Public Release & PyPI
 
 on:
   push:
@@ -10,19 +10,23 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
-      packages: write
+      id-token: write  # Required for OIDC / Trusted Publishers
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.12"
+          enable-cache: true
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.12
 
       - name: Get version from pyproject.toml
         id: get_version
         run: |
-          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          VERSION=$(uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
           echo "VERSION=v$VERSION" >> $GITHUB_OUTPUT
           echo "Detected version: v$VERSION"
 
@@ -38,15 +42,11 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Install build tool
-        if: steps.check_release.outputs.exists == 'false'
-        run: pip install build
-
       - name: Build package
         if: steps.check_release.outputs.exists == 'false'
-        run: python -m build
+        run: uv build
 
-      - name: Create Release and Upload Assets
+      - name: Create GitHub Release
         if: steps.check_release.outputs.exists == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -54,3 +54,9 @@ jobs:
           gh release create ${{ steps.get_version.outputs.VERSION }} dist/* \
             --title "Release ${{ steps.get_version.outputs.VERSION }}" \
             --generate-notes
+
+      - name: Publish to PyPI
+        if: steps.check_release.outputs.exists == 'false'
+        run: uv publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
