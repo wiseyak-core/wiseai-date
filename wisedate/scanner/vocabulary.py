@@ -17,6 +17,8 @@ _TEMPORAL_UNITS = {
     "त्रैमास": "quarter", "त्रैमासिक": "quarter", "चौमासिक": "third", "third": "third",
     "षाण्मासिक": "half", "अर्धवार्षिक": "half", "half": "half", "half_year": "half", "semester": "half",
     "भाग": "half", "आधा": "half", "तिहाई": "third",
+    "fiscal_year": "fiscal_year",
+    "आर्थिक_वर्ष": "fiscal_year", "आ.व.": "fiscal_year", "fy": "fiscal_year",
 }
 
 _TEMPORAL_MODIFIERS = {
@@ -97,5 +99,5 @@ _DIRECTION_WORDS = {
 }
 
 _KEYWORD_TARIKH = {"तारिख", "tarikh", "मिति", "miti", "date"}
-_KEYWORD_GATE = {"गते", "gate"}
+_KEYWORD_GATE = {"गते", "gate", "gatey", "gati"}
 _PUNCTUATIONS = {".", ",", "!", "?", ";", ":", "|", "।", "\n", "\t"}

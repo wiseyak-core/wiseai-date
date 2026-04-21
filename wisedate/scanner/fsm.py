@@ -38,7 +38,8 @@ _LOOKAHEAD_TRIGGERS = {
             TokenKind.MONTH_NAME, 
             TokenKind.WEEKDAY_NAME, 
             TokenKind.ORDINAL, 
-            TokenKind.TARIKH
+            TokenKind.TARIKH,
+            TokenKind.GATE
         })
     ),
     TokenKind.ORDINAL: (
@@ -53,7 +54,8 @@ _LOOKAHEAD_TRIGGERS = {
         frozenset({
             TokenKind.TEMPORAL_UNIT, 
             TokenKind.DIRECTION,
-            TokenKind.MONTH_NAME
+            TokenKind.MONTH_NAME,
+            TokenKind.GATE
         })
     ),
     TokenKind.TEMPORAL_UNIT: (

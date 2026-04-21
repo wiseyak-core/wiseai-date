@@ -299,5 +299,69 @@ class TestScannerJSONL(unittest.TestCase):
                 )
 
 
+class TestScannerVocabularyExpansion(unittest.TestCase):
+    """
+    Tests for expanded vocabulary: Shrawan variations, AD month Devanagari names,
+    Fiscal Year, and new temporal units.
+    """
+    def setUp(self):
+        # BS 2082-01-06 (Baisakh 6)
+        self.ref_date = datetime.date(2025, 4, 18)
+
+    def test_shrawan_variations(self):
+        """श्रावन and साऊन should resolve to month 4 (Shrawan)."""
+        for month_name in ["श्रावन", "साऊन", "shrawn"]:
+            with self.subTest(month_name=month_name):
+                result = scan_text(f"{month_name} मा", ref_date=self.ref_date)
+                self.assertEqual(len(result.extractions), 1, f"Failed for {month_name}")
+                self.assertEqual(result.extractions[0]["normalized"]["month"], 4)
+
+    def test_ad_month_devanagari(self):
+        """जानवरी should resolve to January (AD 1)."""
+        result = scan_text("जानवरी १ तारिख", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+        self.assertEqual(result.extractions[0]["normalized"]["calendar"], "AD")
+        self.assertEqual(result.extractions[0]["normalized"]["month"], 1)
+
+    def test_fiscal_year_resolution(self):
+        """यो आर्थिक वर्ष should resolve to the current Nepali Fiscal Year."""
+        # Today is BS 2082-01-06.
+        # FY started in Shrawan 2081 and ends in Ashadh 2082.
+        result = scan_text("यो आर्थिक वर्ष", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+        extraction = result.extractions[0]
+        self.assertEqual(extraction["normalized"]["type"], "fiscal_year")
+        self.assertEqual(extraction["normalized"]["calendar"], "BS")
+        self.assertEqual(extraction["normalized"]["start"], "2081-04-01")
+        # End of Ashadh 2082 is 32 according to _BS_YEAR_DATA
+        self.assertEqual(extraction["normalized"]["end"], "2082-03-32")
+
+    def test_gatey_unit(self):
+        """५ gatey should be recognized as a day extraction."""
+        result = scan_text("५ gatey", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+        self.assertEqual(result.extractions[0]["normalized"]["type"], "day")
+
+
+class TestIterators(unittest.TestCase):
+    """
+    Tests for BS-specific iterators.
+    """
+    def test_fiscal_year_iterator(self):
+        """FiscalYearIterator should yield Shrawan 1st of consecutive years."""
+        from wisedate.nepali_date import NepaliDateTime, FiscalYearIterator
+        
+        # Start at 2081 Shrawan 1
+        start = NepaliDateTime.from_bs(2081, 4, 1)
+        it = FiscalYearIterator(start, count=3)
+        
+        results = [ndt.isoformat_bs()[:10] for ndt in it]
+        self.assertEqual(results, [
+            "2081-04-01",
+            "2082-04-01",
+            "2083-04-01"
+        ])
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

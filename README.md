@@ -58,6 +58,8 @@ The `NepaliDateTime` class is a wrapper that internally stores a standard Python
 
 - **Java-style API**: Features methods like `of()`, `now()`, `plus()`, `minus()`, `getYear()`, and `withDayOfMonth()`, mirroring `java.time.LocalDateTime`.
 - **Devanagari Support**: Built-in methods to easily access Devanagari numerals, month names, and weekday names natively.
+- **Robust Vocabulary**: Supports a wide range of phonetic variations and common typos for months and weekdays in both Nepali and English (e.g., "श्रावन", "साऊन", "shrawn", "feburary").
+- **Nepali Fiscal Year Support**: Full awareness of the Nepali Fiscal Year (Shrawan 1 – Ashadh end), including specialized resolution and iteration.
 - **Robust Parsing & Output**: Supports formatting and parsing ISO-style timestamps for BS dates.
 - **Flexible Constructors**: Create dates from AD, from BS, or from a parsed string.
 
@@ -144,6 +146,11 @@ for ndt in day_it:
 # Or use the collector method to get a list
 month_it = make_iterator("month", start_date)
 next_5_months = month_it.take(5)
+
+# Fiscal Year Iterator (starts every Shrawan 1st)
+fy_it = make_iterator("fiscal_year", start_date, count=3)
+for ndt in fy_it:
+     print(f"FY starts: {ndt.isoformat_bs()[:10]}")
 ```
 
 ### Using `nepali_range`
@@ -201,7 +208,7 @@ res_quarters = group_dates(dates_to_bucket, by="quarter", calendar="BS")
 - **Periods**: `"month"`, `"quarter"`, `"half"`, `"year"`, `"week"`, `"day"`
 - **Relative English**: `"today"`, `"yesterday"`, `"tomorrow"`, `"this_week"`, `"last_week"`, `"next_week"`, `"this_month"`, `"last_month"`, `"next_month"`, `"rolling_7"`, `"rolling_30"`
 - **Romanized Nepali**: `"aaja"`, `"hijo"`, `"bholi"`
-- **Devanagari (Nepali)**: `"आज"`, `"हिजो"`, `"भोलि"`, `"यो_हप्ता"`, `"गत_हप्ता"`, `"आगामी_हप्ता"`, `"यो_महिना"`, `"गत_महिना"`, `"आगामी_महिना"`, `"पछिल्लो_७_दिन"`, `"पछिल्लो_३०_दिन"`
+- **Devanagari (Nepali)**: `"आज"`, `"हिजो"`, `"भोलि"`, `"यो_हप्ता"`, `"गत_हप्ता"`, `"आगामी_हप्ता"`, `"यो_महिना"`, `"गत_महिना"`, `"आगामी_महिना"`, `"आर्थिक_वर्ष"`, `"आ.व."`, `"पछिल्लो_७_दिन"`, `"पछिल्लो_३०_दिन"`
 
 ---
 
