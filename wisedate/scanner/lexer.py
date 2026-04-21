@@ -35,6 +35,8 @@ _MULTIWORD_PHRASES = [
     "beginning of",
     "close of",
     "half year",
+    "fiscal year",
+    "आर्थिक वर्ष",
 ]
 
 def _normalize_numeral(word: str) -> str:

@@ -5,7 +5,7 @@ from wisedate.nepali_date import (
     ad_to_bs, bs_to_ad,
     ad_month_to_bs_range, bs_month_to_ad_range,
     DateRange, _PHRASE_RESOLVERS, _resolve_month_relative, _resolve_year_relative,
-    current_bs_year, NepaliDateTime
+    current_bs_year, NepaliDateTime, bs_fiscal_year_to_ad_range
 )
 from wisedate.scanner.types import (
     DateExpression, 
@@ -28,6 +28,7 @@ _UNIT_WEEKDAY_EXPLICIT = "weekday_explicit"
 _UNIT_DAY = "day"
 _UNIT_HALF = "half"
 _UNIT_THIRD = "third"
+_UNIT_FISCAL_YEAR = "fiscal_year"
 
 # ── Result Type Constants ──
 _TYPE_DAY = "day"
@@ -66,6 +67,7 @@ _GRANULARITY = {
     _UNIT_MONTH_EXPLICIT: 6,
     _UNIT_QUARTER: 7,
     _UNIT_YEAR: 8,
+    _UNIT_FISCAL_YEAR: 9,
 }
 
 # ── Narrowing Month Positions ──
@@ -260,6 +262,16 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
         yr = _resolve_year_relative(ref_date, is_bs, offset)
         return _apply_boundary(yr, scope.modifier) or yr
 
+    def get_fiscal_year():
+        if not is_bs:
+            return None
+        bs_y, bs_m, _ = ad_to_bs(ref_date)
+        # FY starts in Shrawan (4)
+        start_y = bs_y if bs_m >= 4 else bs_y - 1
+        fy_start_y = start_y + offset
+        dr = bs_fiscal_year_to_ad_range(fy_start_y)
+        return _apply_boundary(dr, scope.modifier) or dr
+
     def get_month():
         dr = _resolve_month_relative(ref_date, is_bs, offset)
         return _apply_boundary(dr, scope.modifier) or dr
@@ -296,6 +308,7 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
         
     _ROOT_HANDLERS = {
         _UNIT_YEAR: get_year,
+        _UNIT_FISCAL_YEAR: get_fiscal_year,
         _UNIT_MONTH: get_month,
         _UNIT_WEEK: get_week,
         _UNIT_MONTH_EXPLICIT: get_month_explicit,

@@ -306,10 +306,10 @@ _BS_MONTH_ALIASES: dict[str, int] = {
         # ── Month 4 — Shrawan ──────────────────────────────────────────────────
         (4, (
             "shrawan", "sawan", "saun", "shrawn", "shraawan", "shravan",
-            "srabon",
-            "shawan", "sraban", "shrawaan", "sraawan", "shreawan", "shrawon",
-            "shrabn", "sharwan", "sharawn", "shrwan", "shaun", "saawn",
-            "sraavn", "shravana", "साउन", "सावन", "श्रावण", "शावन"
+            "srabon", "shawan", "sraban", "shrawaan", "sraawan", "shreawan",
+            "shrawon", "shrabn", "sharwan", "sharawn", "shrwan", "shaun",
+            "saawn", "sraavn", "shravana", "साउन", "सावन", "श्रावण", "शावन",
+            "श्रावन", "साऊन"
         )),
         # ── Month 5 — Bhadra ───────────────────────────────────────────────────
         (5, (
@@ -485,13 +485,15 @@ _AD_MONTH_ALIASES: dict[str, int] = {
         # January
         (1, (
             "january", "jan", "1", "januray", "januery", "janaury", "janury",
-            "janwari", "janwary", "janbari", "janbary", "जनवरी", "जनावरी", "जनबरी", "जनाबरी"
+            "janwari", "janwary", "janbari", "janbary", "जनवरी", "जनावरी",
+            "जनबरी", "जनाबरी", "जानवरी", "जनवरि"
         )),
         # February
         (2, (
             "february", "feb", "2", "febuary", "feburary", "februray",
             "febrary", "febrari", "फेब्रुअरी", "फेब्रूअरी", "फेब्रओरी", 
-            "फेब्रुओरी", "फेब्रुवरि", "फेब्रुवरी", "फेब्रोवरि", "फेब्रोवरी", "फेब्रवरि", "फेब्रवरी"
+            "फेब्रुओरी", "फेब्रुवरि", "फेब्रुवरी", "फेब्रोवरि", "फेब्रोवरी",
+            "फेब्रवरि", "फेब्रवरी", "फेब्रुअरि"
         )),
         # March
         (3, (
@@ -499,7 +501,8 @@ _AD_MONTH_ALIASES: dict[str, int] = {
         )),
         # April
         (4, (
-            "april", "apr", "4", "apirl", "aprl", "aprill", "apryl", "अप्रिल", "अप्रील", "आप्रील", "आप्रिल"
+            "april", "apr", "4", "apirl", "aprl", "aprill", "apryl", "अप्रिल",
+            "अप्रील", "आप्रील", "आप्रिल", "एफ्रिल"
         )),
         # May
         (5, (
@@ -521,7 +524,8 @@ _AD_MONTH_ALIASES: dict[str, int] = {
         # September
         (9, (
             "september", "sep", "sept", "9", "setember", "septmber",
-            "septembar", "septembe", "सेप्टेम्बर", "सिप्तेम्बर", "सितम्बर", "सेप्टम्बर", "सीतम्बर"
+            "septembar", "septembe", "सेप्टेम्बर", "सिप्तेम्बर", "सितम्बर",
+            "सेप्टम्बर", "सीतम्बर", "सेक्टेम्बर"
         )),
         # October
         (10, (
@@ -624,7 +628,7 @@ _WEEKDAY_ALIASES: dict[str, int] = {
             "aitabaar", "aaita", "aita", "aitabar", "rabibar", "ravivar",
             "ravi", "itvar", "aaitabarr", "aaitabara", "aitabarr", "aytabar",
             "rabibaar", "rabibarr", "rabibara", "आइतबार", "आइतवार", "आइत",
-            "रविबार", "रबिबार", "इतवार", "इतबार", "रबिवार"
+            "रविबार", "रबीवार", "रबिबार", "इतवार", "इतबार", "रबिवार", "आईतबार"
         ))
     ]
     for alias in aliases
@@ -953,6 +957,19 @@ def bs_year_to_ad_range(bs_year: int) -> DateRange:
     start_ad = _bs_month_start_ad(bs_year, 1)
     end_ad = _bs_month_end_ad(bs_year, 12)
     return DateRange(start_ad, end_ad, label=f"BS Year {bs_year}")
+
+
+def bs_fiscal_year_to_ad_range(bs_year: int) -> DateRange:
+    """
+    Convert a BS fiscal year (starting in *bs_year*) to AD date range.
+    In Nepal, FY 2080/81 starts on 1 Shrawan 2080 and ends on last day of Ashadh 2081.
+    """
+    start_ad = _bs_month_start_ad(bs_year, 4)  # 4 = Shrawan
+    end_ad = _bs_month_end_ad(bs_year + 1, 3)  # 3 = Ashadh (of next year)
+    return DateRange(
+        start_ad, end_ad, 
+        label=f"FY {bs_year}/{(bs_year + 1) % 100:02d}"
+    )
 
 
 # =========================================================================
