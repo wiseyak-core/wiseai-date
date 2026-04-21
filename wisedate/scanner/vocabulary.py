@@ -1,4 +1,4 @@
-from library.nepali_date import _BS_MONTH_ALIASES, _WEEKDAY_ALIASES, _AD_MONTH_ALIASES, _DEVANAGARI_DIGIT_MAP
+from wisedate.nepali_date import _BS_MONTH_ALIASES, _WEEKDAY_ALIASES, _AD_MONTH_ALIASES, _DEVANAGARI_DIGIT_MAP
 
 _DEVANAGARI_DIGIT_REVERSE = {v: str(k - ord("0")) for k, v in _DEVANAGARI_DIGIT_MAP.items()}
 

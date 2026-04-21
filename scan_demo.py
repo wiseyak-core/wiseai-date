@@ -20,7 +20,7 @@ Examples to try:
     पर्सि आउनुस्
 """
 import json
-from library.scanner import scan_text
+from wisedate.scanner import scan_text
 
 _EXIT_COMMANDS = {"exit", "quit", "q"}
 

@@ -1,7 +1,7 @@
 import json
 from typing import List
 from dataclasses import asdict
-from library.scanner.types import ResolvedDate, ScanResult
+from wisedate.scanner.types import ResolvedDate, ScanResult
 
 # JSON field name constants 
 _FIELD_TEXT = "text"

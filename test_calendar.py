@@ -1,6 +1,6 @@
 import unittest
 import datetime
-from library.nepali_date import (
+from wisedate.nepali_date import (
     bs_to_ad, ad_to_bs, NepaliDateTime, make_iterator, nepali_range, bs_month_calendar,
     to_devanagari_numeral, from_devanagari_numeral, _BS_MONTH_NAMES, _BS_MONTH_NAMES_DEVANAGARI,
     _BS_WEEKDAY_NAMES, _BS_WEEKDAY_NAMES_DEVANAGARI, month_name_to_devanagari,

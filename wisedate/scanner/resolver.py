@@ -1,21 +1,21 @@
 import datetime
 from typing import List, Optional
 
-from library.nepali_date import (
+from wisedate.nepali_date import (
     ad_to_bs, bs_to_ad,
     ad_month_to_bs_range, bs_month_to_ad_range,
     DateRange, _PHRASE_RESOLVERS, _resolve_month_relative, _resolve_year_relative,
     current_bs_year, NepaliDateTime
 )
-from library.scanner.types import (
+from wisedate.scanner.types import (
     DateExpression, 
     ResolvedDate, 
     ScopeLevel, 
     TokenKind, 
     Token
 )
-from library.scanner.lexer import _normalize_numeral
-from library.scanner.vocabulary import _RANGE_BRIDGES, _DEVANAGARI_DIGIT_MAP
+from wisedate.scanner.lexer import _normalize_numeral
+from wisedate.scanner.vocabulary import _RANGE_BRIDGES, _DEVANAGARI_DIGIT_MAP
 
 # ── Unit Constants ──
 _UNIT_YEAR = "year"
