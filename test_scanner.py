@@ -343,5 +343,25 @@ class TestScannerVocabularyExpansion(unittest.TestCase):
         self.assertEqual(result.extractions[0]["normalized"]["type"], "day")
 
 
+class TestIterators(unittest.TestCase):
+    """
+    Tests for BS-specific iterators.
+    """
+    def test_fiscal_year_iterator(self):
+        """FiscalYearIterator should yield Shrawan 1st of consecutive years."""
+        from wisedate.nepali_date import NepaliDateTime, FiscalYearIterator
+        
+        # Start at 2081 Shrawan 1
+        start = NepaliDateTime.from_bs(2081, 4, 1)
+        it = FiscalYearIterator(start, count=3)
+        
+        results = [ndt.isoformat_bs()[:10] for ndt in it]
+        self.assertEqual(results, [
+            "2081-04-01",
+            "2082-04-01",
+            "2083-04-01"
+        ])
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

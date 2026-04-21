@@ -1230,6 +1230,7 @@ FIELD_SECOND: str = "second"
 FIELD_MILLISECOND: str = "millisecond"
 FIELD_WEEK: str = "week"
 FIELD_FORTNIGHT: str = "fortnight"
+FIELD_FISCAL_YEAR: str = "fiscal_year"
 FIELD_YEARS: str = "years"  # plural form used in plus/minus kwargs
 FIELD_MONTHS: str = "months"  # plural form used in plus/minus kwargs
 
@@ -1981,6 +1982,12 @@ def nepali_range(
             for _ in range(abs(n)):
                 result = _next_bs_year(result)
             return result
+
+        if gran_lower == FIELD_FISCAL_YEAR:
+            result = cur
+            for _ in range(abs(n)):
+                result = _next_bs_year(result)
+            return result
         # fixed-width granularities
         delta = _GRANULARITY_FIXED.get(gran_lower)
         if delta is None:
@@ -2087,6 +2094,14 @@ class YearIterator(_BaseIterator):
     _granularity = FIELD_YEAR
 
 
+class FiscalYearIterator(_BaseIterator):
+    """
+    Iterate every Nepali Fiscal Year (starts 1 Shrawan, variable-length).
+    Note: The start date should ideally be a Shrawan 1st date.
+    """
+    _granularity = FIELD_FISCAL_YEAR
+
+
 # ---------------------------------------------------------------------------
 # FACTORY FUNCTION  (single public entry-point for iterators)
 # ---------------------------------------------------------------------------
@@ -2103,6 +2118,7 @@ _ITERATOR_REGISTRY: dict[str, type] = {
     FIELD_MONTH: MonthIterator,
     FIELD_QUARTER: QuarterIterator,
     FIELD_YEAR: YearIterator,
+    FIELD_FISCAL_YEAR: FiscalYearIterator,
 }
 
 
