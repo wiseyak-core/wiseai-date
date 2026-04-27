@@ -26,7 +26,8 @@ _IMMEDIATE_TRIGGERS = frozenset({
     TokenKind.RELATIVE_ADVERB, 
     TokenKind.MONTH_NAME, 
     TokenKind.WEEKDAY_NAME, 
-    TokenKind.NUMERIC_DATE
+    TokenKind.NUMERIC_DATE,
+    TokenKind.CALENDAR_SIGNAL
 })
 
 # Maps a triggering TokenKind to a tuple of (lookahead_distance, {valid_target_kinds})
@@ -50,22 +51,34 @@ _LOOKAHEAD_TRIGGERS = {
         })
     ),
     TokenKind.NUMBER: (
-        2, 
+        4,                              # widened: NUMBER → UNIT → CONNECTOR → DIRECTION
         frozenset({
             TokenKind.TEMPORAL_UNIT, 
             TokenKind.DIRECTION,
             TokenKind.MONTH_NAME,
-            TokenKind.GATE
+            TokenKind.GATE,
+            TokenKind.ORDINAL,
+            TokenKind.CONNECTOR,
+            TokenKind.CALENDAR_SIGNAL
+        })
+    ),
+    TokenKind.CALENDAR_SIGNAL: (
+        3,
+        frozenset({
+            TokenKind.NUMBER,
+            TokenKind.MONTH_NAME,
+            TokenKind.TEMPORAL_UNIT
         })
     ),
     TokenKind.TEMPORAL_UNIT: (
-        2, 
+        3,                              # widened: UNIT → CONNECTOR → DIRECTION
         frozenset({
             TokenKind.ORDINAL, 
             TokenKind.TEMPORAL_UNIT, 
             TokenKind.MONTH_NAME, 
             TokenKind.TEMPORAL_MODIFIER, 
-            TokenKind.DIRECTION
+            TokenKind.DIRECTION,
+            TokenKind.CONNECTOR
         })
     ),
     TokenKind.DIRECTION: (
@@ -73,6 +86,12 @@ _LOOKAHEAD_TRIGGERS = {
         frozenset({
             TokenKind.NUMBER, 
             TokenKind.TEMPORAL_UNIT
+        })
+    ),
+    TokenKind.CONNECTOR: (
+        2, 
+        frozenset({
+            TokenKind.DIRECTION
         })
     ),
 }
@@ -172,6 +191,8 @@ class FSMScanner:
                     self.state.calendar_signal = _CAL_AD
                 case TokenKind.MONTH_NAME if token.norm in _BS_MONTH_ALIASES:
                     self.state.calendar_signal = "BS"
+                case TokenKind.CALENDAR_SIGNAL:
+                    self.state.calendar_signal = token.value
 
         def _handle_collecting(token: Token):
             # 1. Guard against blocklists
@@ -208,6 +229,28 @@ class FSMScanner:
                     self.state.buffer.append(token)
                     _update_calendar_signal(token)
                     return
+
+                # Bypass swap if a calendar signal follows a number (e.g. 2081 BS)
+                if token.kind == TokenKind.CALENDAR_SIGNAL and prev and prev.kind in {TokenKind.NUMBER, TokenKind.NUMERIC_DATE}:
+                    self.state.buffer.append(token)
+                    _update_calendar_signal(token)
+                    return
+
+                # Bypass swap if a numeric date follows a calendar signal (e.g. BS 2081-01-01)
+                if token.kind == TokenKind.NUMERIC_DATE and prev and prev.kind == TokenKind.CALENDAR_SIGNAL:
+                    self.state.buffer.append(token)
+                    _update_calendar_signal(token)
+                    return
+
+                # Scope-continuation: if a MONTH_NAME appears and the buffer
+                # already has a TEMPORAL_UNIT, the month is a scoping parent
+                # (e.g. "2nd week of bhadra 2081"), not a new expression.
+                if token.kind == TokenKind.MONTH_NAME and _buffer_has_kind(
+                    self.state.buffer, TokenKind.TEMPORAL_UNIT
+                ):
+                    self.state.buffer.append(token)
+                    _update_calendar_signal(token)
+                    return
                         
                 self._emit_current()
                 return _start_collecting(token)
@@ -234,3 +277,5 @@ class FSMScanner:
             self._emit_current()
             
         return self.extractions
+def _buffer_has_kind(buffer: List[Token], kind: TokenKind) -> bool:
+    return any(t.kind == kind for t in buffer)

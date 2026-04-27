@@ -4,13 +4,13 @@ _DEVANAGARI_DIGIT_REVERSE = {v: str(k - ord("0")) for k, v in _DEVANAGARI_DIGIT_
 
 _TEMPORAL_UNITS = {
     "वर्ष": "year", "बर्ष": "year", "साल": "year",
-    "महिना": "month",
-    "हप्ता": "week",
-    "दिन": "day",
+    "महिना": "month", "महीना": "month", "महिनो": "month",
+    "हप्ता": "week", "हप्तो": "week", "सप्ताह": "week",
+    "दिन": "day", "दीन": "day", "दिनो": "day",
     "barsa": "year", "sal": "year",
-    "mahina": "month",
-    "hapta": "week",
-    "din": "day",
+    "mahina": "month", "mahinaa": "month",
+    "hapta": "week", "haptaa": "week", "saptaaha": "week",
+    "din": "day", "deen": "day",
     "year": "year", "month": "month", "week": "week", "day": "day",
     "years": "year", "months": "month", "weeks": "week", "days": "day",
     "fortnight": "fortnight", "quarter": "quarter", "पक्ष": "fortnight", "biweek": "fortnight",
@@ -53,10 +53,22 @@ _ORDINALS = {
 }
 
 _WORD_NUMBERS = {
+    # Nepali cardinal numbers (1–31)
     "एक": 1, "दुई": 2, "तीन": 3, "चार": 4, "पाँच": 5,
     "छ": 6, "सात": 7, "आठ": 8, "नौ": 9, "दश": 10,
+    "एघार": 11, "बाह्र": 12, "तेह्र": 13, "चौध": 14, "पन्ध्र": 15,
+    "सोह्र": 16, "सत्र": 17, "अठार": 18, "उन्नाइस": 19, "बीस": 20,
+    "एक्काइस": 21, "बाइस": 22, "तेइस": 23, "चौबीस": 24, "पच्चीस": 25,
+    "छब्बीस": 26, "सत्ताइस": 27, "अट्ठाइस": 28, "उनन्तीस": 29, "तीस": 30,
+    "एकतीस": 31,
+    # English cardinal numbers (1–31)
     "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
     "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
+    "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
+    "twenty-one": 21, "twenty-two": 22, "twenty-three": 23, "twenty-four": 24, "twenty-five": 25,
+    "twenty-six": 26, "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29, "thirty": 30, "thirty-one": 31,
+    # English articles as 1
     "a": 1, "an": 1,
 }
 
@@ -82,22 +94,39 @@ _RECURRENCE_WORDS = {
 }
 
 _RELATIVE_ADVERBS = {
-    "आज": "today", "aaja": "today", "today": "today",
-    "हिजो": "yesterday", "hijo": "yesterday", "yesterday": "yesterday",
-    "भोलि": "tomorrow", "bholi": "tomorrow", "tomorrow": "tomorrow",
-    "परसि": "day_after_tomorrow", "parsi": "day_after_tomorrow", "पर्सि": "day_after_tomorrow",
+    "आज": "today", "aaja": "today", "today": "today", "aaj": "today",
+    "हिजो": "yesterday", "hijo": "yesterday", "yesterday": "yesterday", "हीजो": "yesterday",
+    "भोलि": "tomorrow", "bholi": "tomorrow", "tomorrow": "tomorrow", "भोली": "tomorrow",
+    "परसि": "day_after_tomorrow", "parsi": "day_after_tomorrow", "पर्सि": "day_after_tomorrow","पर्सी": "day_after_tomorrow", "परसी": "day_after_tomorrow",
     "day_after_tomorrow": "day_after_tomorrow",
-    "अस्ति": "day_before_yesterday", "asti": "day_before_yesterday",
+    "अस्ति": "day_before_yesterday", "asti": "day_before_yesterday", 
     "day_before_yesterday": "day_before_yesterday",
+    "अस्ती": "day_before_yesterday"
 }
 
 _DIRECTION_WORDS = {
     "अगाडि": -1, "अघि": -1, "पहिले": -1, "अघी": -1, "अगाडी": -1,
+    "पहिला": -1, "पहले": -1,
     "ago": -1, "back": -1, "before": -1, "earlier": -1,
-    "पछि": +1, "पछाडि": +1, "पछी": +1,
-    "after": +1, "later": +1,
+    "पछि": +1, "पछाडि": +1, "पछी": +1, "पछाडी": +1,
+    "after": +1, "later": +1, "hence": +1,
+}
+
+_CONNECTOR_WORDS = {
+    "भन्दा": "comparative",   # "than" — used in "X भन्दा अघि/पछि"
+    "भंदा": "comparative",
+    "vanda": "comparative",
+    "bhanda": "comparative",
+    "bhandaa": "comparative",
+    "than": "comparative",
 }
 
 _KEYWORD_TARIKH = {"तारिख", "tarikh", "मिति", "miti", "date"}
 _KEYWORD_GATE = {"गते", "gate", "gatey", "gati"}
+_CALENDAR_SIGNALS = {
+    "बि·_सं·": "BS", "वि·_सं·": "BS", "बि·सं·": "BS", "वि·सं·": "BS",
+    "b·s·": "BS", "bs": "BS", "bikram_sambat": "BS",
+    "ई·_सं·": "AD", "इ·सं·": "AD", "सन्": "AD", "ad": "AD", "a·d·": "AD",
+    "b·_s·": "BS", "a·_d·": "AD"
+}
 _PUNCTUATIONS = {".", ",", "!", "?", ";", ":", "|", "।", "\n", "\t"}

@@ -81,15 +81,14 @@ def _build_scope_stack(tokens: List[Token]) -> List[ScopeLevel]:
     stack = []
     current_state = {"modifier": None, "ordinal": None, "number": None}
 
-    def _flush_scope(unit_val: str):
+    def _flush_scope(unit_val: str, explicit_value: Optional[int] = None):
         modifier = current_state["modifier"]
         # Prefer ordinal if set, otherwise use current number (e.g. for Day in "Jan 12")
         ordinal = current_state["ordinal"] if current_state["ordinal"] is not None else current_state["number"]
-        number = current_state["number"]
         # Default modifier if entirely unconstrained for the root scope
-        if not any(current_state.values()) and not stack and token.kind == TokenKind.TEMPORAL_UNIT:
+        if not any(v is not None for v in current_state.values()) and not stack and token.kind == TokenKind.TEMPORAL_UNIT:
             modifier = _MOD_THIS
-        stack.append(ScopeLevel(unit=unit_val, ordinal=ordinal, modifier=modifier))
+        stack.append(ScopeLevel(unit=unit_val, ordinal=ordinal, modifier=modifier, explicit_value=explicit_value))
         current_state.update(modifier=None, ordinal=None, number=None)
 
     def _safe_modifier_update(current_mod: str | None, new_mod: str) -> str:
@@ -106,15 +105,18 @@ def _build_scope_stack(tokens: List[Token]) -> List[ScopeLevel]:
                 )
         ),
         TokenKind.ORDINAL: lambda t: current_state.update(ordinal=t.value),
-        # Only capture numbers <= 32 as potential days (ignores years like 2024)
-        TokenKind.NUMBER: lambda t: current_state.update(number=t.value) if (isinstance(t.value, int) and t.value <= 32) else None,
+        # Capture numbers <= 32 as potential days; treat larger numbers (>100) as years
+        TokenKind.NUMBER: lambda t: (
+            current_state.update(number=t.value) if (isinstance(t.value, int) and t.value <= 32) 
+            else (_flush_scope(_UNIT_YEAR, explicit_value=t.value) if isinstance(t.value, int) and t.value > 100 else None)
+        ),
         TokenKind.TEMPORAL_UNIT: lambda t: _flush_scope(t.value),
         # Flush a DAY scope if a number is pending before processing the month
         TokenKind.MONTH_NAME: lambda t: (
             _flush_scope(_UNIT_DAY) if (current_state["number"] is not None or current_state["ordinal"] is not None) else None,
-            _flush_scope(_UNIT_MONTH_EXPLICIT)
+            _flush_scope(_UNIT_MONTH_EXPLICIT, explicit_value=t.value)
         )[-1],
-        TokenKind.WEEKDAY_NAME: lambda t: _flush_scope(_UNIT_WEEKDAY_EXPLICIT),
+        TokenKind.WEEKDAY_NAME: lambda t: _flush_scope(_UNIT_WEEKDAY_EXPLICIT, explicit_value=t.value),
         TokenKind.TARIKH: lambda t: _flush_scope(_UNIT_DAY)
     }
 
@@ -167,7 +169,8 @@ def _resolve_directional(
     
     if not (unit_t and dir_t): return None
     
-    val = num_t.value if num_t else 1
+    has_connector = any(t.kind == TokenKind.CONNECTOR for t in tokens)
+    val = (num_t.value if num_t else 1) + (1 if has_connector else 0)
     unit, direction = unit_t.value, dir_t.value
     def get_exact_month(ref: datetime.date, count: int, sign: int, bs: bool):
         if bs:
@@ -250,6 +253,13 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
     offset = _offset_map.get(scope.modifier, 0)
 
     def get_year():
+        if scope.explicit_value:
+            if is_bs:
+                dr = DateRange(bs_to_ad(scope.explicit_value, 1, 1), bs_to_ad(scope.explicit_value, 12, 30))
+            else:
+                dr = DateRange(datetime.date(scope.explicit_value, 1, 1), datetime.date(scope.explicit_value, 12, 31))
+            return dr
+
         if scope.modifier == _MOD_MIDDLE_OF:
             # Middle of year is Kartik (7) or July (7)
             if is_bs:
@@ -285,16 +295,11 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
         m_token = next((t for t in tokens if t.kind == TokenKind.MONTH_NAME), None)
         if not m_token: return None
         
-        # Look for a 4-digit year token
-        year_token = next((t for t in tokens if t.kind == TokenKind.NUMBER and isinstance(t.value, int) and 1900 <= t.value <= 2200), None)
-        year_val_bs = year_token.value if year_token else None
-        year_val_ad = year_token.value if year_token else ref_date.year
-        
         if is_bs:
-            yr = year_val_bs if year_val_bs else ad_to_bs(ref_date)[0]
+            yr = ad_to_bs(ref_date)[0]
             dr = bs_month_to_ad_range(m_token.value, yr)
         else:
-            dr = ad_month_to_bs_range(m_token.value, year_val_ad)
+            dr = ad_month_to_bs_range(m_token.value, ref_date.year)
             
         return _apply_boundary(dr, scope.modifier) or dr
 
@@ -336,7 +341,7 @@ def _eval_narrowing_scope(scope: ScopeLevel, parent_dr: DateRange, is_bs: bool) 
             case "middle_of": m_num = _NARROW_MONTH_MIDDLE
             case "end_of": m_num = _NARROW_MONTH_LAST
             case "first_of": m_num = _NARROW_MONTH_FIRST
-            case _: m_num = scope.ordinal if scope.ordinal else parent_dr.start_bs[1]
+            case _: m_num = scope.explicit_value if scope.explicit_value is not None else (scope.ordinal if scope.ordinal else parent_dr.start_bs[1])
         return bs_month_to_ad_range(m_num, parent_dr.start_bs[0]) if is_bs else ad_month_to_bs_range(m_num, parent_dr.start_ad.year)
 
     def narrow_generic(chunks: int):
@@ -364,12 +369,14 @@ def _eval_narrowing_scope(scope: ScopeLevel, parent_dr: DateRange, is_bs: bool) 
 
     _NARROW_HANDLERS = {
         _UNIT_MONTH: narrow_month,
+        _UNIT_MONTH_EXPLICIT: narrow_month,
         _UNIT_DAY: narrow_day,
         _UNIT_WEEK: lambda: narrow_duration(7),
         _UNIT_FORTNIGHT: lambda: narrow_duration(14),
         _UNIT_HALF: lambda: narrow_generic(2),
         _UNIT_THIRD: lambda: narrow_generic(3),
         _UNIT_QUARTER: lambda: narrow_generic(4),
+        _UNIT_WEEKDAY_EXPLICIT: lambda: _get_nth_day(parent_dr, (scope.explicit_value if scope.explicit_value is not None else 0) + 1),
     }
     return _NARROW_HANDLERS.get(scope.unit, lambda: parent_dr)()
 
@@ -498,22 +505,23 @@ def _build_resolved(expr: DateExpression, dr: DateRange, is_bs: bool, unit: str)
     if days_span > 1 and unit == _TYPE_POSTPOSITION_RANGE: result_type = _TYPE_RANGE
     
     # Format ISO strings
+    # iso_replacement construction
+    # If it's a BS date, we convert to AD for the final replacement string
+    year_ad = dr.start_ad.year
+    month_ad = dr.start_ad.month
+    day_ad = dr.start_ad.day
+    year_end_ad = dr.end_ad.year
+    month_end_ad = dr.end_ad.month
+    day_end_ad = dr.end_ad.day
+
     iso_formats = {
-        _TYPE_MONTH: lambda: f"{year:04d}-{month:02d}",
-        _TYPE_YEAR: lambda: f"{year:04d}",
-        _TYPE_RANGE: lambda: f"{year:04d}-{month:02d}-{day:02d}~{year_end:04d}-{month_end:02d}-{day_end:02d}",
-        "default": lambda: f"{year:04d}-{month:02d}-{day:02d}" if dr.start_ad == dr.end_ad else \
-                           (f"{year:04d}-{month:02d}-{day:02d}~{day_end:02d}" if (month, year) == (month_end, year_end) else f"{year:04d}-{month:02d}-{day:02d}~{year_end:04d}-{month_end:02d}-{day_end:02d}")
+        _TYPE_MONTH: lambda: f"{year_ad:04d}-{month_ad:02d}",
+        _TYPE_YEAR: lambda: f"{year_ad:04d}",
+        _TYPE_RANGE: lambda: f"{year_ad:04d}-{month_ad:02d}-{day_ad:02d}~{year_end_ad:04d}-{month_end_ad:02d}-{day_end_ad:02d}",
+        "default": lambda: f"{year_ad:04d}-{month_ad:02d}-{day_ad:02d}" if dr.start_ad == dr.end_ad else \
+                           (f"{year_ad:04d}-{month_ad:02d}-{day_ad:02d}~{day_end_ad:02d}" if (month_ad, year_ad) == (month_end_ad, year_end_ad) else f"{year_ad:04d}-{month_ad:02d}-{day_ad:02d}~{year_end_ad:04d}-{month_end_ad:02d}-{day_end_ad:02d}")
     }
     iso_repl = iso_formats.get(result_type, iso_formats["default"])()
-    
-    # Devanagari mirroring
-    if is_bs and any("\u0900" <= c <= "\u097F" for t in expr.tokens for c in t.text):
-        iso_repl = iso_repl.translate(_DEVANAGARI_DIGIT_MAP)
-
-    # Wrap BS dates in <BS> tag for calendar identification; AD stays plain ISO
-    if is_bs:
-        iso_repl = f"<BS>{iso_repl}</BS>"
 
     return ResolvedDate(
         expression=expr, calendar="BS" if is_bs else "AD", type=result_type,

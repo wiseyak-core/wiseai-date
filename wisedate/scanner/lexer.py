@@ -15,8 +15,10 @@ from wisedate.scanner.vocabulary import (
     _RECURRENCE_WORDS, 
     _RELATIVE_ADVERBS, 
     _DIRECTION_WORDS,
+    _CONNECTOR_WORDS,
     _KEYWORD_TARIKH, 
     _KEYWORD_GATE, 
+    _CALENDAR_SIGNALS,
     _PUNCTUATIONS, 
     _DEVANAGARI_DIGIT_REVERSE,
     _WORD_NUMBERS
@@ -37,6 +39,14 @@ _MULTIWORD_PHRASES = [
     "half year",
     "fiscal year",
     "आर्थिक वर्ष",
+    "बि. सं.",
+    "वि. सं.",
+    "बि.सं.",
+    "वि.सं.",
+    "ई. सं.",
+    "इ.सं.",
+    "b. s.",
+    "a. d.",
 ]
 
 def _normalize_numeral(word: str) -> str:
@@ -53,8 +63,10 @@ _VOCAB_CLASSIFIERS: List[Tuple[Dict[str, Any] | set, TokenKind, Callable[[str], 
     (_RECURRENCE_WORDS, TokenKind.RECURRENCE, None),
     (_TEMPORAL_UNITS, TokenKind.TEMPORAL_UNIT, lambda n: _TEMPORAL_UNITS[n]),
     (_DIRECTION_WORDS, TokenKind.DIRECTION, lambda n: _DIRECTION_WORDS[n]),
+    (_CONNECTOR_WORDS, TokenKind.CONNECTOR, lambda n: _CONNECTOR_WORDS[n]),
     (_KEYWORD_TARIKH, TokenKind.TARIKH, None),
     (_KEYWORD_GATE, TokenKind.GATE, None),
+    (_CALENDAR_SIGNALS, TokenKind.CALENDAR_SIGNAL, lambda n: _CALENDAR_SIGNALS[n]),
     (_POSTPOSITIONS, TokenKind.POSTPOSITION, None),
 ]
 
@@ -85,7 +97,7 @@ def lex(text: str) -> List[Token]:
         idx = text_lower.find(phrase)
         while idx != -1:
             end_idx = idx + len(phrase)
-            chunk = text[idx:end_idx].replace(" ", "_")
+            chunk = text[idx:end_idx].replace(" ", "_").replace(".", "·")
             text = text[:idx] + chunk + text[end_idx:]
             text_lower = text.lower()
             idx = text_lower.find(phrase)
@@ -124,8 +136,7 @@ def lex(text: str) -> List[Token]:
             ] 
             for pp in sorted_postpositions 
             if piece.endswith(pp) 
-            and len(piece) > len(pp) 
-            and piece[:-len(pp)].lower() in temporal_roots),
+            and (piece[:-len(pp)].lower() in temporal_roots or _NUMBER_PATTERN.match(piece[:-len(pp)]))),
             None
         )
         

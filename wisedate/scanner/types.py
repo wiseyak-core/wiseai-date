@@ -17,6 +17,8 @@ class TokenKind(Enum):
     POSTPOSITION = "postposition"
     NUMBER = "number"
     DIRECTION = "direction"
+    CONNECTOR = "connector"
+    CALENDAR_SIGNAL = "cal_signal"
     REGULAR = "regular"
     PUNCTUATION = "punctuation"
 
@@ -35,6 +37,7 @@ class ScopeLevel:
     unit: str
     ordinal: Optional[int] = None
     modifier: Optional[str] = None
+    explicit_value: Optional[int] = None
     tarikh_ad: bool = False
 
 

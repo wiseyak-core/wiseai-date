@@ -253,6 +253,71 @@ class TestScannerRefDate(unittest.TestCase):
         self.assertEqual(result.extractions[0]["normalized"]["type"], "day")
 
 
+class TestScannerScopedExpressions(unittest.TestCase):
+    """
+    Tests ordinal/modifier + unit + of/ko + month [year] patterns:
+    second week of bhadra 2081, दोस्रो हप्ता भदौ, etc.
+    """
+    def setUp(self):
+        self.ref_date = datetime.date(2025, 4, 18)
+
+    def test_second_week_of_bhadra_2081(self):
+        result = scan_text("second week of bhadra 2081", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+        ext = result.extractions[0]
+        self.assertEqual(ext["text"], "second week of bhadra 2081")
+        self.assertEqual(ext["normalized"]["type"], "week")
+        self.assertEqual(ext["normalized"]["calendar"], "BS")
+
+    def test_2nd_week_of_bhadra_2081(self):
+        result = scan_text("2nd week of bhadra 2081", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+        self.assertEqual(result.extractions[0]["text"], "2nd week of bhadra 2081")
+
+    def test_first_week_of_shrawan(self):
+        # Shrawan is the 4th month in BS
+        result = scan_text("first week of shrawan 2082", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+        self.assertEqual(result.extractions[0]["normalized"]["month"], 4)
+
+    def test_embedded_in_sentence(self):
+        result = scan_text(
+            "what is the total male employee count in second week of bhadra 2081 for branch 001",
+            ref_date=self.ref_date
+        )
+        self.assertEqual(len(result.extractions), 1)
+        self.assertEqual(result.extractions[0]["text"], "second week of bhadra 2081")
+
+
+class TestScannerConnectorPatterns(unittest.TestCase):
+    """
+    Tests भन्दा (comparative connector) patterns:
+    १ दिन भन्दा अघि, ३ महिना भन्दा पछि, etc.
+    """
+    def setUp(self):
+        self.ref_date = datetime.date(2025, 4, 18)
+
+    def test_ek_din_bhanda_aghi(self):
+        result = scan_text("१ दिन भन्दा अघि", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+        self.assertEqual(result.extractions[0]["normalized"]["type"], "day")
+
+    def test_teen_din_bhanda_pachhi(self):
+        result = scan_text("३ दिन भन्दा पछि", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+
+    def test_din_variant_deen(self):
+        """दीन should be treated as दिन."""
+        result = scan_text("३ दीन अघि", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+
+    def test_mahina_variant_maheena(self):
+        """महीना should be treated as महिना."""
+        result = scan_text("दुई महीना भन्दा अघि", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+
+
+
 class TestScannerJSONL(unittest.TestCase):
     """
     Data-driven tests loaded from scanner_cases.jsonl.
