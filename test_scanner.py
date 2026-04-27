@@ -343,6 +343,48 @@ class TestScannerVocabularyExpansion(unittest.TestCase):
         self.assertEqual(result.extractions[0]["normalized"]["type"], "day")
 
 
+class TestScannerBSResolutionFixes(unittest.TestCase):
+    """
+    Tests specific bug fixes for BS date resolution.
+    """
+    def setUp(self):
+        # BS 2082-01-06 (Baisakh 6)
+        self.ref_date = datetime.date(2025, 4, 18)
+
+    def test_year_2081_shrawon(self):
+        """'year 2081 shrawon' should resolve to Shrawon 2081 BS."""
+        result = scan_text("year 2081 shrawon", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+        extraction = result.extractions[0]
+        self.assertEqual(extraction["normalized"]["calendar"], "BS")
+        self.assertEqual(extraction["normalized"]["year"], 2081)
+        self.assertEqual(extraction["normalized"]["month"], 4)
+        # Should be a month range
+        self.assertEqual(extraction["normalized"]["start"], "2081-04-01")
+        self.assertEqual(extraction["normalized"]["end"], "2081-04-32")
+
+    def test_branch_code_002_ignored(self):
+        """'002' should be TokenKind.REGULAR and not cause a date extraction."""
+        result = scan_text("branch 002 code", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 0)
+
+    def test_gate_after_shrawon(self):
+        """'Shrawon 12' should resolve to 12th of Shrawon."""
+        result = scan_text("Shrawon 12", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+        extraction = result.extractions[0]
+        self.assertEqual(extraction["normalized"]["month"], 4)
+        self.assertEqual(extraction["normalized"]["day"], 12)
+
+    def test_gate_before_shrawon(self):
+        """'12 Shrawon' should resolve to 12th of Shrawon."""
+        result = scan_text("12 Shrawon", ref_date=self.ref_date)
+        self.assertEqual(len(result.extractions), 1)
+        extraction = result.extractions[0]
+        self.assertEqual(extraction["normalized"]["month"], 4)
+        self.assertEqual(extraction["normalized"]["day"], 12)
+
+
 class TestIterators(unittest.TestCase):
     """
     Tests for BS-specific iterators.

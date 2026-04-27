@@ -65,6 +65,9 @@ def _classify_word(word: str, start: int, end: int) -> Token:
     if _ISO_DATE_PATTERN.match(norm):
         return Token(word, norm, TokenKind.NUMERIC_DATE, (start, end))
     if _NUMBER_PATTERN.match(norm):
+        # Prevent branch codes like "002" from being interpreted as numbers
+        if len(norm) >= 3 and norm.startswith("0"):
+            return Token(word, norm, TokenKind.REGULAR, (start, end))
         return Token(word, norm, TokenKind.NUMBER, (start, end), int(_normalize_numeral(norm)))
 
     # 2. Check Vocabulary Matchers using generator
