@@ -5,7 +5,8 @@ from wisedate.nepali_date import (
     ad_to_bs, bs_to_ad,
     ad_month_to_bs_range, bs_month_to_ad_range,
     DateRange, _PHRASE_RESOLVERS, _resolve_month_relative, _resolve_year_relative,
-    current_bs_year, NepaliDateTime, bs_fiscal_year_to_ad_range
+    current_bs_year, NepaliDateTime, bs_fiscal_year_to_ad_range,
+    ad_year_to_bs_range, bs_year_to_ad_range
 )
 from wisedate.scanner.types import (
     DateExpression, 
@@ -15,7 +16,10 @@ from wisedate.scanner.types import (
     Token
 )
 from wisedate.scanner.lexer import _normalize_numeral
-from wisedate.scanner.vocabulary import _RANGE_BRIDGES, _DEVANAGARI_DIGIT_MAP
+from wisedate.scanner.vocabulary import (
+    _RANGE_BRIDGES, _DEVANAGARI_DIGIT_MAP,
+    MAX_DAY_VALUE, MIN_YEAR_VALUE, MAX_YEAR_VALUE,
+)
 
 # ── Unit Constants ──
 _UNIT_YEAR = "year"
@@ -107,11 +111,11 @@ def _build_scope_stack(tokens: List[Token]) -> List[ScopeLevel]:
         ),
         TokenKind.ORDINAL: lambda t: current_state.update(ordinal=t.value),
         # Only capture numbers <= 32 as potential days (ignores years like 2024)
-        TokenKind.NUMBER: lambda t: current_state.update(number=t.value) if (isinstance(t.value, int) and t.value <= 32) else None,
+        TokenKind.NUMBER: lambda t: current_state.update(number=t.value) if (isinstance(t.value, int) and t.value <= MAX_DAY_VALUE) else None,
         TokenKind.TEMPORAL_UNIT: lambda t: _flush_scope(t.value),
-        # Flush a DAY scope if a number is pending before processing the month
         TokenKind.MONTH_NAME: lambda t: (
-            _flush_scope(_UNIT_DAY) if (current_state["number"] is not None or current_state["ordinal"] is not None) else None,
+            _flush_scope(_UNIT_DAY) if current_state["number"] is not None else None,
+            current_state.update(ordinal=t.value),
             _flush_scope(_UNIT_MONTH_EXPLICIT)
         )[-1],
         TokenKind.WEEKDAY_NAME: lambda t: _flush_scope(_UNIT_WEEKDAY_EXPLICIT),
@@ -259,6 +263,14 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
             return ad_month_to_bs_range(
                 _NARROW_MONTH_MIDDLE, ref_date.year
             )
+            
+        # Check for an explicit 4-digit year token (1900–2200) if no relative modifier is present
+        if not scope.modifier or scope.modifier == _MOD_THIS:
+            year_token = next((t for t in tokens if t.kind == TokenKind.NUMBER and isinstance(t.value, int) and MIN_YEAR_VALUE <= t.value <= MAX_YEAR_VALUE), None)
+            if year_token:
+                yr_dr = bs_year_to_ad_range(year_token.value) if is_bs else ad_year_to_bs_range(year_token.value)
+                return _apply_boundary(yr_dr, scope.modifier) or yr_dr
+
         yr = _resolve_year_relative(ref_date, is_bs, offset)
         return _apply_boundary(yr, scope.modifier) or yr
 
@@ -286,7 +298,7 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
         if not m_token: return None
         
         # Look for a 4-digit year token
-        year_token = next((t for t in tokens if t.kind == TokenKind.NUMBER and isinstance(t.value, int) and 1900 <= t.value <= 2200), None)
+        year_token = next((t for t in tokens if t.kind == TokenKind.NUMBER and isinstance(t.value, int) and MIN_YEAR_VALUE <= t.value <= MAX_YEAR_VALUE), None)
         year_val_bs = year_token.value if year_token else None
         year_val_ad = year_token.value if year_token else ref_date.year
         
@@ -362,8 +374,14 @@ def _eval_narrowing_scope(scope: ScopeLevel, parent_dr: DateRange, is_bs: bool) 
         en = min(parent_dr.end_ad, st + datetime.timedelta(days=days - 1))
         return DateRange(st, en) if st <= parent_dr.end_ad else parent_dr
 
+    def narrow_month_explicit():
+        m_num = scope.ordinal if scope.ordinal else (parent_dr.start_bs[1] if is_bs else parent_dr.start_ad.month)
+        dr = bs_month_to_ad_range(m_num, parent_dr.start_bs[0]) if is_bs else ad_month_to_bs_range(m_num, parent_dr.start_ad.year)
+        return _apply_boundary(dr, modifier) or dr
+
     _NARROW_HANDLERS = {
         _UNIT_MONTH: narrow_month,
+        _UNIT_MONTH_EXPLICIT: narrow_month_explicit,
         _UNIT_DAY: narrow_day,
         _UNIT_WEEK: lambda: narrow_duration(7),
         _UNIT_FORTNIGHT: lambda: narrow_duration(14),
