@@ -98,6 +98,23 @@ _DIRECTION_WORDS = {
     "after": +1, "later": +1,
 }
 
+# ── Dimension Parameters ──────────────────────────────────────────────────────
+# Configuration values that define how the scanner identifies different types 
+# of numbers (dimensions) like days, years, or non-date codes.
+
+# Rules for ignoring non-date codes (like bank branch codes '001', '002')
+# If a number starts with '0' and has 3 or more digits, we skip it to avoid false positives.
+ZERO_PREFIXED_MIN_LENGTH = 3
+ZERO_PREFIX = "0"
+
+# Bare numbers up to this value are considered potential days of the month.
+# (Note: Some Bikram Sambat months have 32 days).
+MAX_DAY_VALUE = 32
+
+# Bare numbers within this range are automatically identified as explicit years.
+MIN_YEAR_VALUE = 1900
+MAX_YEAR_VALUE = 2200
+
 _KEYWORD_TARIKH = {"तारिख", "tarikh", "मिति", "miti", "date"}
 _KEYWORD_GATE = {"गते", "gate", "gatey", "gati"}
 _PUNCTUATIONS = {".", ",", "!", "?", ";", ":", "|", "।", "\n", "\t"}

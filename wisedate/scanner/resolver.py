@@ -16,7 +16,10 @@ from wisedate.scanner.types import (
     Token
 )
 from wisedate.scanner.lexer import _normalize_numeral
-from wisedate.scanner.vocabulary import _RANGE_BRIDGES, _DEVANAGARI_DIGIT_MAP
+from wisedate.scanner.vocabulary import (
+    _RANGE_BRIDGES, _DEVANAGARI_DIGIT_MAP,
+    MAX_DAY_VALUE, MIN_YEAR_VALUE, MAX_YEAR_VALUE,
+)
 
 # ── Unit Constants ──
 _UNIT_YEAR = "year"
@@ -108,7 +111,7 @@ def _build_scope_stack(tokens: List[Token]) -> List[ScopeLevel]:
         ),
         TokenKind.ORDINAL: lambda t: current_state.update(ordinal=t.value),
         # Only capture numbers <= 32 as potential days (ignores years like 2024)
-        TokenKind.NUMBER: lambda t: current_state.update(number=t.value) if (isinstance(t.value, int) and t.value <= 32) else None,
+        TokenKind.NUMBER: lambda t: current_state.update(number=t.value) if (isinstance(t.value, int) and t.value <= MAX_DAY_VALUE) else None,
         TokenKind.TEMPORAL_UNIT: lambda t: _flush_scope(t.value),
         TokenKind.MONTH_NAME: lambda t: (
             _flush_scope(_UNIT_DAY) if current_state["number"] is not None else None,
@@ -263,7 +266,7 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
             
         # Check for an explicit 4-digit year token (1900–2200) if no relative modifier is present
         if not scope.modifier or scope.modifier == _MOD_THIS:
-            year_token = next((t for t in tokens if t.kind == TokenKind.NUMBER and isinstance(t.value, int) and 1900 <= t.value <= 2200), None)
+            year_token = next((t for t in tokens if t.kind == TokenKind.NUMBER and isinstance(t.value, int) and MIN_YEAR_VALUE <= t.value <= MAX_YEAR_VALUE), None)
             if year_token:
                 yr_dr = bs_year_to_ad_range(year_token.value) if is_bs else ad_year_to_bs_range(year_token.value)
                 return _apply_boundary(yr_dr, scope.modifier) or yr_dr
@@ -295,7 +298,7 @@ def _eval_root_scope(scope: ScopeLevel, ref_date: datetime.date, is_bs: bool, to
         if not m_token: return None
         
         # Look for a 4-digit year token
-        year_token = next((t for t in tokens if t.kind == TokenKind.NUMBER and isinstance(t.value, int) and 1900 <= t.value <= 2200), None)
+        year_token = next((t for t in tokens if t.kind == TokenKind.NUMBER and isinstance(t.value, int) and MIN_YEAR_VALUE <= t.value <= MAX_YEAR_VALUE), None)
         year_val_bs = year_token.value if year_token else None
         year_val_ad = year_token.value if year_token else ref_date.year
         

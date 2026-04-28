@@ -19,7 +19,9 @@ from wisedate.scanner.vocabulary import (
     _KEYWORD_GATE, 
     _PUNCTUATIONS, 
     _DEVANAGARI_DIGIT_REVERSE,
-    _WORD_NUMBERS
+    _WORD_NUMBERS,
+    ZERO_PREFIXED_MIN_LENGTH,
+    ZERO_PREFIX,
 )
 
 _ISO_DATE_PATTERN = re.compile(r"^([0-9०-९]{4})-([0-9०-९]{2})-([0-9०-९]{2})$")
@@ -66,7 +68,7 @@ def _classify_word(word: str, start: int, end: int) -> Token:
         return Token(word, norm, TokenKind.NUMERIC_DATE, (start, end))
     if _NUMBER_PATTERN.match(norm):
         # Prevent branch codes like "002" from being interpreted as numbers
-        if len(norm) >= 3 and norm.startswith("0"):
+        if len(norm) >= ZERO_PREFIXED_MIN_LENGTH and norm.startswith(ZERO_PREFIX):
             return Token(word, norm, TokenKind.REGULAR, (start, end))
         return Token(word, norm, TokenKind.NUMBER, (start, end), int(_normalize_numeral(norm)))
 
